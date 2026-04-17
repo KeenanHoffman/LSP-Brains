@@ -15,11 +15,14 @@ import sys
 from pathlib import Path
 from typing import Any
 
-_SDK_PATH = Path(r"D:/Brains/Moth-er-Br-AI-n/sdk-python")
-if str(_SDK_PATH) not in sys.path:
-    sys.path.insert(0, str(_SDK_PATH))
-
-from lsp_brains import SensoryTool, Finding  # noqa: E402
+# SDK import — prefer installed `lsp_brains`; fall back to sibling layout.
+try:
+    from lsp_brains import SensoryTool, Finding  # noqa: E402
+except ImportError:
+    _SIBLING_SDK = Path(__file__).resolve().parents[2] / "Moth-er-Br-AI-n" / "sdk-python"
+    if (_SIBLING_SDK / "lsp_brains" / "__init__.py").is_file():
+        sys.path.insert(0, str(_SIBLING_SDK))
+    from lsp_brains import SensoryTool, Finding  # noqa: E402
 
 
 # Matches `diagrams/<name>.mmd` anywhere in the spec (prose, backticks, or blockquotes).

@@ -1,0 +1,44 @@
+name: CI
+
+# Spec §3.8 "Testing Discipline" at the spec-repo level — runs the seven
+# spec-quality sensors + their integration tests on every push/PR to main.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  spec-quality-sensors:
+    name: pytest (ubuntu)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      # The sensors import `lsp_brains` from the sibling MotherBrain repo
+      # (ecosystem monorepo layout). Clone the sibling adjacent so the
+      # try/except SDK shim resolves via the fallback path. Once `lsp_brains`
+      # is on PyPI (S6-DB-6+ follow-on), this step can be replaced with a
+      # plain `pip install lsp-brains`.
+      - name: clone MotherBrain sibling
+        run: |
+          git clone --depth 1 https://github.com/KeenanHoffman/Moth-er-Br-AI-n.git ../Moth-er-Br-AI-n
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: install SDK + test deps
+        run: |
+          python -m pip install --upgrade pip
+          # Install the SDK from the sibling checkout so `from lsp_brains import ...`
+          # resolves via the preferred (installed) branch of the shim.
+          python -m pip install -e "../Moth-er-Br-AI-n/sdk-python[dev]"
+          python -m pip install -r tests/requirements-dev.txt
+
+      - name: pytest
+        run: pytest tests/ -v

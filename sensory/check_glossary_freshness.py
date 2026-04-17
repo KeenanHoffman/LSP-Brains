@@ -33,11 +33,19 @@ import sys
 from pathlib import Path
 from typing import Any
 
-_SDK_PATH = Path(r"D:/Brains/Moth-er-Br-AI-n/sdk-python")
-if str(_SDK_PATH) not in sys.path:
-    sys.path.insert(0, str(_SDK_PATH))
-
-from lsp_brains import SensoryTool, Finding  # noqa: E402
+# SDK import — prefer installed `lsp_brains` (pip install -e
+# Moth-er-Br-AI-n/sdk-python). Falls back to the ecosystem sibling layout
+# (`<ecosystem-root>/Moth-er-Br-AI-n/sdk-python/`) when run from a
+# monorepo-style checkout without a pip install. CI installs the SDK
+# explicitly so the try branch succeeds; keeping the fallback means the
+# standalone-clone dev loop still works.
+try:
+    from lsp_brains import SensoryTool, Finding  # noqa: E402
+except ImportError:
+    _SIBLING_SDK = Path(__file__).resolve().parents[2] / "Moth-er-Br-AI-n" / "sdk-python"
+    if (_SIBLING_SDK / "lsp_brains" / "__init__.py").is_file():
+        sys.path.insert(0, str(_SIBLING_SDK))
+    from lsp_brains import SensoryTool, Finding  # noqa: E402
 
 
 BOLD_RE = re.compile(r"\*\*([^*\n]+?)\*\*")
