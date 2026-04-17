@@ -1,12 +1,12 @@
 {
   "meta": {
     "updated_by": "check-glossary-freshness",
-    "updated_at": "2026-04-17T17:14:33.012265Z",
+    "updated_at": "2026-04-17T18:07:51.172210Z",
     "source": "scan of spec prose for **bold** terms vs Appendix E glossary rows",
     "schema_version": "1"
   },
   "score": 42,
-  "updated_at": "2026-04-17T17:14:33.012265Z",
+  "updated_at": "2026-04-17T18:07:51.172210Z",
   "findings": [
     "Bold terms introduced in body: 15",
     "Glossary entries in Appendix E: 44",

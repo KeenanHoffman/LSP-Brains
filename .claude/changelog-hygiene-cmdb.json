@@ -1,12 +1,12 @@
 {
   "meta": {
     "updated_by": "check-changelog-hygiene",
-    "updated_at": "2026-04-17T17:11:53.232214Z",
+    "updated_at": "2026-04-17T18:07:49.296563Z",
     "source": "scan of spec ### Changelog block for METHODOLOGY-EVOLUTION.md \u00a7N citations; cross-check against METHODOLOGY-EVOLUTION ## N. headings",
     "schema_version": "1"
   },
   "score": 100,
-  "updated_at": "2026-04-17T17:11:53.232214Z",
+  "updated_at": "2026-04-17T18:07:49.296563Z",
   "findings": [
     "Changelog entries parsed: 2",
     "METHODOLOGY-EVOLUTION sections present: 7",

@@ -1,12 +1,12 @@
 {
   "meta": {
     "updated_by": "check-schema-validity",
-    "updated_at": "2026-04-17T17:11:57.038108Z",
+    "updated_at": "2026-04-17T18:07:53.637505Z",
     "source": "parse of schemas/*.schema.json: draft-07 conformance, internal $ref resolution",
     "schema_version": "1"
   },
   "score": 100,
-  "updated_at": "2026-04-17T17:11:57.038108Z",
+  "updated_at": "2026-04-17T18:07:53.637505Z",
   "findings": [
     "Schemas scanned: 6",
     "Invalid JSON schemas: 0",

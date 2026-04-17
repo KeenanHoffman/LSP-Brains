@@ -1,12 +1,12 @@
 {
   "meta": {
     "updated_by": "check-diagram-sync",
-    "updated_at": "2026-04-17T17:13:12.571841Z",
+    "updated_at": "2026-04-17T18:07:50.241784Z",
     "source": "scan of spec for diagrams/*.mmd references vs files under spec/diagrams/",
     "schema_version": "1"
   },
   "score": 100,
-  "updated_at": "2026-04-17T17:13:12.571841Z",
+  "updated_at": "2026-04-17T18:07:50.241784Z",
   "findings": [
     "Diagrams referenced in spec: 10",
     "Diagrams present on disk: 10",

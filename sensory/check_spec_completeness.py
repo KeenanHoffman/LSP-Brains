@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 # --- SDK path shim (pip install not required) -------------------------------
-_SDK_PATH = Path(r"D:/Brains/Moth-er-Br-AI-n/Moth-er-Br-AI-n-main/sdk-python")
+_SDK_PATH = Path(r"D:/Brains/Moth-er-Br-AI-n/sdk-python")
 if str(_SDK_PATH) not in sys.path:
     sys.path.insert(0, str(_SDK_PATH))
 
