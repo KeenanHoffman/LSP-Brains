@@ -1,8 +1,96 @@
 # LSP Brains: Methodology Evolution Analysis
 
-**Date:** 2026-04-11 (original) — **Updated:** 2026-04-17 (sensor testing discipline)
+**Date:** 2026-04-11 (original) — **Updated:** 2026-04-17 (A2A-pull fractal composition)
 **Context:** Stage 5 complete (7/7 stories). Three deep audits synthesized.
 **Purpose:** Identify structural improvements to the underlying methodology.
+
+---
+
+## 9. A2A-Pull Fractal Composition (2026-04-17)
+
+### Problem
+
+Spec §9 "Fractal Composition" describes the pattern: a parent Brain
+aggregates child Brain scores, treating each child's unified score as
+one input to the parent's own score. Spec §13 adds A2A as the
+RECOMMENDED transport for this, replacing the legacy subprocess-
+invocation fallback. The Rust workspace shipped both layers in Stage 6:
+
+- `motherbrain-a2a` crate — A2A server + client (envelopes, task
+  lifecycle, agent cards)
+- `motherbrain-ecosystem` crate — `ChildEntry` / `ChildTransport::A2A` +
+  `invoke_child` + `score_ecosystem` for aggregation
+
+What was missing: **the wiring from the regular scoring pipeline to
+these layers**. A brain-registry could declare
+`scoring_source: {type: "cmdb", path: "…"}` and the pipeline would load
+that domain's CMDB from disk. It had no way to declare `type: "a2a"` —
+the schema didn't allow it, and `load_cmdb_data` silently skipped
+anything that wasn't `"cmdb"`. The fractal pattern existed in code but
+couldn't be reached from configuration alone.
+
+Result: the ecosystem Brain at `D:\Brains\.claude\` declared two
+children (MotherBrain + LSP-Brains) but never consumed their scores.
+Its unified score reflected only its own 6 domains from local CMDBs.
+The three-Brain topology was load-bearing in diagrams and
+documentation but had never actually composed.
+
+### The Insight
+
+Declaration is not composition. Three separate layers shipped without
+the one-line contract that connects them: a `scoring_source.type`
+variant that tells the pipeline "fetch this domain's score from that
+peer Brain." A declaration in the schema isn't the same as a wire
+running between modules. The fractal pattern requires all three layers
+to agree:
+
+1. **Schema** — `brain-registry-v2` permits `type: "a2a"` + `endpoint`
+2. **Rust types** — `ScoringSource` carries the `endpoint` string
+3. **Pipeline dispatch** — `load_cmdb_data` routes `type: "a2a"` to
+   `invoke_child` with a synthesized `ChildTransport::A2A`
+
+Session 3 landed all three. The test at
+`motherbrain-cli/tests/three_way_brain.rs` spawns two real subprocess
+peers, builds an ecosystem registry pointing at them via A2A endpoints,
+and runs `motherbrain score` — the full pipeline path a user would
+take. The score aggregates across all three sources (2 A2A peers + 1
+local CMDB) and exits 0. Fractal composition is finally composed.
+
+### The Fix
+
+Three lock-step additions, all additive:
+
+- `brain-registry-v2.schema.json` — `scoring_source.type` enum gains
+  `"a2a"`; new `endpoint` + `interface_version` properties.
+- `motherbrain-core/src/registry.rs` — `ScoringSource` gains
+  `endpoint: Option<String>` + `interface_version: Option<String>`.
+- `motherbrain-cli/src/commands/context.rs::load_cmdb_data` — dispatch
+  on `source_type`; A2A branch builds a `ChildEntry` and calls
+  `motherbrain_ecosystem::invoke_child`; resulting AgentOutput.score
+  becomes the domain's raw score.
+
+Failure semantics: unreachable peer / bad URL / version mismatch →
+tracing warning, domain falls back to `no_file_score` (default 0).
+Consistent with the existing CMDB-miss path.
+
+### Deployment Note
+
+For the real ecosystem registry at `D:/Brains/.claude/`, the A2A-pull
+opt-in is NOT flipped by default. Flipping it requires children to be
+running as A2A servers when the parent scores — a deployment choice
+the user makes when they have a running topology. The code path is
+proven by the integration test; the registry flip is a separate
+operational decision.
+
+### Carried Forward
+
+- Parallel A2A fetch (currently sequential in `load_cmdb_data`) is a
+  natural follow-on once an ecosystem has ≥3 A2A-sourced domains and
+  latency becomes material.
+- Proactive emission (child pushes `score.updated` to parent on
+  change, vs parent pulling) remains explicitly deferred (Stage 6+ per
+  dual_brain_pair's out-of-scope note). This pass shipped the pull
+  direction; push is a separate piece.
 
 ---
 
