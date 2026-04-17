@@ -1,18 +1,18 @@
 {
   "meta": {
     "updated_by": "check-glossary-freshness",
-    "updated_at": "2026-04-17T19:15:22.919235Z",
+    "updated_at": "2026-04-17T19:26:58.445813Z",
     "source": "scan of spec prose for **bold** terms vs Appendix E glossary rows",
     "schema_version": "1"
   },
-  "score": 42,
-  "updated_at": "2026-04-17T19:15:22.919235Z",
+  "score": 100,
+  "updated_at": "2026-04-17T19:26:58.445813Z",
   "findings": [
     {
       "name": "finding-000",
       "status": "info",
       "points": 0,
-      "detail": "Bold terms introduced in body: 15"
+      "detail": "Bold terms introduced in body: 18"
     },
     {
       "name": "finding-001",
@@ -30,101 +30,11 @@
       "name": "finding-003",
       "status": "info",
       "points": 0,
-      "detail": "Orphan glossary entries (not referenced in body): 29"
-    },
-    {
-      "name": "finding-004",
-      "status": "info",
-      "points": 0,
-      "detail": "  orphan: **A2A Message**"
-    },
-    {
-      "name": "finding-005",
-      "status": "info",
-      "points": 0,
-      "detail": "  orphan: **Action type**"
-    },
-    {
-      "name": "finding-006",
-      "status": "info",
-      "points": 0,
-      "detail": "  orphan: **Advisory domain**"
-    },
-    {
-      "name": "finding-007",
-      "status": "info",
-      "points": 0,
-      "detail": "  orphan: **Agent Card**"
-    },
-    {
-      "name": "finding-008",
-      "status": "info",
-      "points": 0,
-      "detail": "  orphan: **Autonomy level**"
-    },
-    {
-      "name": "finding-009",
-      "status": "info",
-      "points": 0,
-      "detail": "  orphan: **Blast radius**"
-    },
-    {
-      "name": "finding-010",
-      "status": "info",
-      "points": 0,
-      "detail": "  orphan: **CMDB**"
-    },
-    {
-      "name": "finding-011",
-      "status": "info",
-      "points": 0,
-      "detail": "  orphan: **Condition tree**"
-    },
-    {
-      "name": "finding-012",
-      "status": "info",
-      "points": 0,
-      "detail": "  orphan: **Confidence**"
-    },
-    {
-      "name": "finding-013",
-      "status": "info",
-      "points": 0,
-      "detail": "  orphan: **Cultural Substrate**"
-    },
-    {
-      "name": "finding-014",
-      "status": "info",
-      "points": 0,
-      "detail": "  orphan: **Culture Invariant**"
-    },
-    {
-      "name": "finding-015",
-      "status": "info",
-      "points": 0,
-      "detail": "  orphan: **Culture Manifest**"
-    },
-    {
-      "name": "finding-016",
-      "status": "info",
-      "points": 0,
-      "detail": "  orphan: **Domain**"
-    },
-    {
-      "name": "finding-017",
-      "status": "info",
-      "points": 0,
-      "detail": "  orphan: **Dual brain**"
-    },
-    {
-      "name": "finding-018",
-      "status": "info",
-      "points": 0,
-      "detail": "  orphan: **Ecosystem**"
+      "detail": "Orphan glossary entries (not referenced in body): 0"
     }
   ],
   "exported_variables": {
     "glossary:missing_count": 0,
-    "glossary:orphan_count": 29
+    "glossary:orphan_count": 0
   }
 }

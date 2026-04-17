@@ -1304,7 +1304,8 @@ Minimum Agent Card:
 
 ### 13.3 Task Lifecycle
 
-An A2A interaction is structured as a **task**. A task has:
+An A2A interaction is structured as a **Task (A2A)** (see Appendix E — the parenthesized
+suffix disambiguates from other "task" usages elsewhere in the document). A task has:
 
 1. **Creation** — the client POSTs an A2A envelope (validated against
    `a2a-envelope-v1.schema.json`) to `{transport.endpoint}{transport.tasks_path}`.
@@ -1443,9 +1444,10 @@ scheduled check (see §14.6).
 
 ### 14.4 Invariant Semantics
 
-Culture values are **invariants**, analogous to `safety_invariants` in autonomy
-resolution (§5.5, step 4). They apply after hats, personas, and human-comms, and they
-can only tighten output constraints, never loosen them.
+Culture values are **Culture Invariant**s (see Appendix E), analogous to
+**Safety invariant**s in autonomy resolution (§5.5, step 4). They apply after hats,
+personas, and human-comms, and they can only tighten output constraints, never loosen
+them.
 
 Concretely:
 

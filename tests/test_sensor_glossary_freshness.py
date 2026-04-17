@@ -24,10 +24,9 @@ def test_glossary_freshness_exports_declared_variables(repo_root):
 
 
 def test_glossary_freshness_regression_guard(repo_root):
-    # Today: 42 (legitimate live score — recent sections introduced terms
-    # that don't yet have glossary entries in Appendix E; raising this is
-    # a real piece of follow-on work, not a sensor bug). The guard catches
-    # further regression rather than asserting a target state.
+    # Today: 100. If this drops, either a `**bolded**` term is missing from
+    # Appendix E (add a glossary row), or a glossary row has been added that
+    # the spec body never references anywhere (remove the row or reference it).
     tool = GlossaryFreshnessTool()
     env = asyncio.run(tool.analyze(str(repo_root)))
-    assert env["score"] >= 42, f"glossary-freshness regressed — findings: {env['findings']}"
+    assert env["score"] >= 100, f"glossary-freshness regressed — findings: {env['findings']}"

@@ -1,8 +1,24 @@
 """Glossary freshness sensory tool.
 
-Extracts bold-quoted terms (`**Term**`) in the spec outside Appendix E,
-compares against glossary entries in Appendix E, and surfaces both
-introduced-but-undefined terms and orphan glossary entries.
+Two checks:
+
+1. **Missing** — a term `**bolded**` in spec body prose but not defined in the
+   Appendix E glossary. The author flagged it as noteworthy (by bolding) yet
+   never gave it a definition. Fix: add a glossary row.
+
+2. **Orphan** — a term defined in Appendix E but *never* referenced in spec
+   body prose (neither as `**bold**` nor as plain text). A dead glossary
+   entry: definition without a reader ever needing it. Fix: remove the row
+   or use the term somewhere in the spec.
+
+The orphan check uses a loose definition on purpose. An earlier version of
+this sensor treated any unbolded use as an orphan, which produced 29 false
+positives — terms like "CMDB", "Hat", and "Ecosystem" are used constantly in
+body prose, just without `**bold**` on first use. The spec does not mandate
+bolding of first-use terms (no RFC 2119 SHOULD for it), so the sensor now
+treats any textual occurrence as sufficient. If a future spec iteration
+adopts a strict bold-on-first-use convention (a quality signal worth having),
+this sensor can be tightened at that time.
 
 Glossary entries are recognized as leading-cell `**Term**` inside the
 Appendix E markdown table.
@@ -126,7 +142,20 @@ class GlossaryFreshnessTool(SensoryTool):
         introduced_lower = {t.lower() for t in introduced}
 
         missing = sorted(t for t in introduced if t.lower() not in gloss_lower)
-        orphans = sorted(t for t in glossary_terms if t.lower() not in introduced_lower)
+
+        # Orphan = glossary term that never appears in body prose at all (plain
+        # OR bolded). The earlier strict definition (bolded-use only) produced
+        # 26 false positives on terms like "CMDB" that appear in prose without
+        # bolding. The spec does not mandate bolding of first-use terms.
+        body_lower = prose_before.lower()
+        # Use lookaround boundaries instead of `\b` so parenthesized terms like
+        # `Task (A2A)` match — `\b` doesn't assert between `)` and a space,
+        # which would hide legitimate references.
+        orphans = sorted(
+            t
+            for t in glossary_terms
+            if not re.search(r"(?<!\w)" + re.escape(t.lower()) + r"(?!\w)", body_lower)
+        )
 
         score = 100 - 5 * len(missing) - 2 * len(orphans)
         score = max(0, min(100, score))
