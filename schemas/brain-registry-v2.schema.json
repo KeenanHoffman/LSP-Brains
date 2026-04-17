@@ -81,12 +81,22 @@
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": ["cmdb", "function"],
-                    "description": "'cmdb' reads score from a JSON file. 'function' dispatches to implementation-specific scoring functions."
+                    "enum": ["cmdb", "function", "a2a"],
+                    "description": "'cmdb' reads score from a JSON file. 'function' dispatches to implementation-specific scoring functions. 'a2a' fetches the score from a peer Brain A2A endpoint at score time (spec §9 fractal composition — parent pulls child's current AgentOutput via snapshot.requested and uses its top-level score for this domain)."
                   },
                   "path": {
                     "type": "string",
                     "description": "Path to the CMDB file, relative to project root. Required for type 'cmdb'."
+                  },
+                  "endpoint": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Peer Brain A2A base URL (e.g., 'http://127.0.0.1:8421/a2a/v1/'). Required for type 'a2a'. The parent Brain will POST snapshot.requested to this endpoint each time the domain is scored; the child's returned AgentOutput.score becomes this domain's raw score."
+                  },
+                  "interface_version": {
+                    "type": "string",
+                    "description": "Expected agent-output schema version the A2A peer emits. Default: '1'. Used for pre-flight version negotiation (spec §6).",
+                    "default": "1"
                   },
                   "score_field": {
                     "type": "string",
@@ -100,7 +110,7 @@
                   },
                   "no_file_score": {
                     "type": "integer",
-                    "description": "Score to use when the CMDB file is missing. Default: 0.",
+                    "description": "Score to use when the CMDB file is missing OR the A2A peer is unreachable. Default: 0.",
                     "minimum": 0,
                     "maximum": 100,
                     "default": 0
