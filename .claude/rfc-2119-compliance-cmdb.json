@@ -1,0 +1,23 @@
+{
+  "meta": {
+    "updated_by": "check-rfc-2119-compliance",
+    "updated_at": "2026-04-17T17:11:56.167408Z",
+    "source": "scan of spec numbered sections for lowercase will/should/must vs RFC 2119 uppercase usage",
+    "schema_version": "1"
+  },
+  "score": 99,
+  "updated_at": "2026-04-17T17:11:56.167408Z",
+  "findings": [
+    "MUST occurrences: 130",
+    "SHOULD occurrences: 41",
+    "MAY occurrences: 17",
+    "Ambiguous-normative (lowercase will/should/must in numbered sections): 1",
+    "  \u00a71: 'must' in: Rust. The specification defines WHAT a conformant Brain must do. The implementation"
+  ],
+  "exported_variables": {
+    "rfc2119:ambiguous_count": 1,
+    "rfc2119:must_count": 130,
+    "rfc2119:should_count": 41,
+    "rfc2119:may_count": 17
+  }
+}

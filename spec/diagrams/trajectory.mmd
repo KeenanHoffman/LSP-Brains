@@ -1,0 +1,29 @@
+graph TD
+    subgraph History["Score History (JSON array)"]
+        S1["s₁"] --> S2["s₂"] --> S3["s₃"] --> S4["..."] --> SN["sₙ"]
+    end
+
+    subgraph Windows["Windowed Analysis (N = velocity_window)"]
+        PREV["Previous N scores<br/>avg(sₙ₋₂ₙ ... sₙ₋ₙ₋₁)"]
+        RECENT["Recent N scores<br/>avg(sₙ₋ₙ ... sₙ)"]
+    end
+
+    subgraph Compute["Trajectory Computation"]
+        VEL["Velocity<br/>avg(recent) − avg(previous)"]
+        ACC["Acceleration<br/>velocityₙₒw − velocityₚᵣₑᵥ"]
+    end
+
+    subgraph Classify["Classification"]
+        IMP["improving<br/>velocity ≥ +2"]
+        DEG["degrading<br/>velocity ≤ −2"]
+        VOL["volatile<br/>stddev ≥ 10"]
+        STB["stable<br/>none of above"]
+    end
+
+    History --> PREV
+    History --> RECENT
+    PREV --> VEL
+    RECENT --> VEL
+    VEL --> ACC
+    VEL --> Classify
+    ACC --> Classify

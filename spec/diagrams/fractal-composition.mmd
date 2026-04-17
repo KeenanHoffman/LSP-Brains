@@ -1,0 +1,24 @@
+graph TD
+    subgraph Parent["Parent Brain"]
+        PS["Parent Scoring<br/>(own domains)"]
+        AGG["Ecosystem Aggregation<br/>weighted_avg(parent + children)"]
+        CPVAR["Cross-Project Variables<br/>child.{id}:{domain}:{signal}"]
+        CPINC["Cross-Project Patterns<br/>(incident detection across children)"]
+    end
+
+    subgraph Children["Child Brains"]
+        CA["Child A<br/>agent-output-schema.json<br/>score: 72, confidence: 85"]
+        CB["Child B<br/>agent-output-schema.json<br/>score: 58, confidence: 90"]
+        CC["Child C<br/>agent-output-schema.json<br/>score: 91, confidence: 95"]
+    end
+
+    CA -->|"A2A or subprocess"| AGG
+    CB -->|"A2A or subprocess"| AGG
+    CC -->|"A2A or subprocess"| AGG
+    CA -->|"domain_variables"| CPVAR
+    CB -->|"domain_variables"| CPVAR
+    CC -->|"domain_variables"| CPVAR
+    PS --> AGG
+    CPVAR --> CPINC
+    AGG --> OUT["Ecosystem Score<br/>(unified across all projects)"]
+    CPINC --> OUT

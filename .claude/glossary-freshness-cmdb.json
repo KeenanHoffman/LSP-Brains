@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "updated_by": "check-glossary-freshness",
+    "updated_at": "2026-04-17T17:14:33.012265Z",
+    "source": "scan of spec prose for **bold** terms vs Appendix E glossary rows",
+    "schema_version": "1"
+  },
+  "score": 42,
+  "updated_at": "2026-04-17T17:14:33.012265Z",
+  "findings": [
+    "Bold terms introduced in body: 15",
+    "Glossary entries in Appendix E: 44",
+    "Introduced but undefined: 0",
+    "Orphan glossary entries (not referenced in body): 29",
+    "  orphan: **A2A Message**",
+    "  orphan: **Action type**",
+    "  orphan: **Advisory domain**",
+    "  orphan: **Agent Card**",
+    "  orphan: **Autonomy level**",
+    "  orphan: **Blast radius**",
+    "  orphan: **CMDB**",
+    "  orphan: **Condition tree**",
+    "  orphan: **Confidence**",
+    "  orphan: **Cultural Substrate**",
+    "  orphan: **Culture Invariant**",
+    "  orphan: **Culture Manifest**",
+    "  orphan: **Domain**",
+    "  orphan: **Dual brain**",
+    "  orphan: **Ecosystem**"
+  ],
+  "exported_variables": {
+    "glossary:missing_count": 0,
+    "glossary:orphan_count": 29
+  }
+}

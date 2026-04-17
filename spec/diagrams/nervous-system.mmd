@@ -1,0 +1,29 @@
+graph TB
+    subgraph Biological["Biological Analogy"]
+        EYES["Eyes, Ears<br/>(sensory organs)"]
+        BRAIN["Brain<br/>(central processing)"]
+        REFLEX["Spinal Reflexes<br/>(autonomic responses)"]
+        PROPRIO["Proprioception<br/>(body awareness)"]
+        COMM["Speech<br/>(communication)"]
+    end
+
+    subgraph LSPBrains["LSP Brains Components"]
+        SENSORY["Sensory Tools<br/>(any language → JSON CMDB)"]
+        SCORING["Scoring Engine<br/>(registry-driven, confidence-weighted)"]
+        GOV["Governance<br/>(gates, hooks, autonomy)"]
+        TRAJ["Trajectory Intelligence<br/>(velocity, acceleration, classification)"]
+        OUTPUT["Output Modes<br/>(agent JSON, health report, score line)"]
+    end
+
+    EYES -.-> SENSORY
+    BRAIN -.-> SCORING
+    REFLEX -.-> GOV
+    PROPRIO -.-> TRAJ
+    COMM -.-> OUTPUT
+
+    SENSORY -->|"writes CMDB"| SCORING
+    SCORING -->|"domain variables"| GOV
+    SCORING -->|"score snapshots"| TRAJ
+    SCORING --> OUTPUT
+    GOV --> OUTPUT
+    TRAJ --> OUTPUT

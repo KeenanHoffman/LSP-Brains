@@ -1,0 +1,465 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/keenanHoffmanSparq/LSP-Brains/schemas/brain-registry-v2.schema.json",
+  "title": "Brain Registry v2",
+  "description": "Central configuration file for an LSP Brain. Source truth: hand-maintained, committed to version control. Defines domains, scoring, governance, and intelligence configuration.",
+  "type": "object",
+  "required": ["meta", "tools", "data_sources", "config"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["schema_version", "description", "updated_by"],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "description": "Registry schema version.",
+          "enum": ["1", "2"]
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of this Brain."
+        },
+        "updated_by": {
+          "type": "string",
+          "description": "Identifier of the last editor (e.g., 'hand-maintained')."
+        }
+      },
+      "additionalProperties": false
+    },
+    "tools": {
+      "type": "object",
+      "description": "Registered tool definitions. May be empty.",
+      "additionalProperties": true
+    },
+    "data_sources": {
+      "type": "object",
+      "description": "Registered data source definitions. May be empty.",
+      "additionalProperties": true
+    },
+    "config": {
+      "type": "object",
+      "required": [
+        "domain_weights",
+        "domain_definitions",
+        "scoring",
+        "gate_tiers",
+        "confidence_thresholds",
+        "autonomy"
+      ],
+      "properties": {
+        "domain_weights": {
+          "type": "object",
+          "description": "Domain key -> weight (0.0-1.0). Weights of scored domains MUST sum to 1.0 (+/- 0.01). Advisory domains use weight 0.0.",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          }
+        },
+        "advisory_domains": {
+          "type": "array",
+          "description": "Domain keys with weight 0.0. Excluded from unified score.",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "principle_map": {
+          "type": "object",
+          "description": "Domain key -> human-readable display name.",
+          "additionalProperties": { "type": "string" }
+        },
+        "domain_definitions": {
+          "type": "object",
+          "description": "Domain key -> scoring source configuration.",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["scoring_source"],
+            "properties": {
+              "scoring_source": {
+                "type": "object",
+                "required": ["type"],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["cmdb", "function"],
+                    "description": "'cmdb' reads score from a JSON file. 'function' dispatches to implementation-specific scoring functions."
+                  },
+                  "path": {
+                    "type": "string",
+                    "description": "Path to the CMDB file, relative to project root. Required for type 'cmdb'."
+                  },
+                  "score_field": {
+                    "type": "string",
+                    "description": "JSON field name containing the score. Default: 'score'.",
+                    "default": "score"
+                  },
+                  "updated_at_field": {
+                    "type": "string",
+                    "description": "JSON field name containing the timestamp. Default: 'updated_at'.",
+                    "default": "updated_at"
+                  },
+                  "no_file_score": {
+                    "type": "integer",
+                    "description": "Score to use when the CMDB file is missing. Default: 0.",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "default": 0
+                  }
+                }
+              },
+              "floor": {
+                "type": "object",
+                "description": "Domain floor constraint. If score drops below min_score, the unified score is capped.",
+                "properties": {
+                  "min_score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Threshold below which the floor activates."
+                  },
+                  "unified_cap": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Maximum unified score when floor is active."
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Human-readable explanation of why the floor exists."
+                  }
+                },
+                "required": ["min_score", "unified_cap"]
+              },
+              "exported_variables": {
+                "type": "object",
+                "description": "Variables extracted from CMDB data for cross-domain correlation.",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "field": { "type": "string", "description": "CMDB field to extract." },
+                    "type": { "type": "string", "enum": ["boolean", "number", "string"] }
+                  },
+                  "required": ["field", "type"]
+                }
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "domain_variables": {
+          "type": "object",
+          "description": "Static domain variables (hand-configured). Merged with auto-extracted variables at runtime.",
+          "additionalProperties": true,
+          "default": {}
+        },
+        "scoring": {
+          "type": "object",
+          "required": ["model"],
+          "properties": {
+            "model": {
+              "type": "string",
+              "enum": ["multiplier", "floor"],
+              "description": "'multiplier': effective = raw * confidence / 100. 'floor': effective = min(raw, ceiling) when confidence < threshold."
+            },
+            "floor_confidence_threshold": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100,
+              "default": 30,
+              "description": "For 'floor' model: confidence below this triggers the ceiling."
+            },
+            "floor_score_ceiling": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100,
+              "default": 30,
+              "description": "For 'floor' model: max effective score when confidence is below threshold."
+            }
+          }
+        },
+        "gate_tiers": {
+          "type": "object",
+          "description": "Gate tier definitions with scoring and priority weights.",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["scoring_weight", "priority_weight"],
+            "properties": {
+              "scoring_weight": { "type": "number", "minimum": 0, "maximum": 1 },
+              "priority_weight": { "type": "number", "minimum": 0 },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "confidence_thresholds": {
+          "type": "object",
+          "required": ["cmdb_fresh_days", "cmdb_stale_days", "cmdb_very_stale_days"],
+          "properties": {
+            "cmdb_fresh_days": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Age in days below which CMDB data is considered fresh."
+            },
+            "cmdb_stale_days": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Age in days at which CMDB data is considered stale."
+            },
+            "cmdb_very_stale_days": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Age in days at which CMDB data is considered very stale. Used as the half-life anchor for exponential decay: confidence = 25 at this age."
+            }
+          }
+        },
+        "staleness_thresholds": {
+          "type": "object",
+          "properties": {
+            "gate_stale_hours": { "type": "number", "minimum": 0, "default": 4 },
+            "health_score_yellow": { "type": "integer", "minimum": 0, "maximum": 100, "default": 75 },
+            "health_score_red": { "type": "integer", "minimum": 0, "maximum": 100, "default": 50 }
+          }
+        },
+        "severity_thresholds": {
+          "type": "object",
+          "properties": {
+            "warning_count": { "type": "integer", "minimum": 1, "default": 3 },
+            "critical_count": { "type": "integer", "minimum": 1, "default": 5 },
+            "recurrence_window_days": { "type": "integer", "minimum": 1, "default": 7 }
+          }
+        },
+        "trajectory": {
+          "type": "object",
+          "description": "Trajectory intelligence configuration.",
+          "properties": {
+            "retention_days": { "type": "integer", "minimum": 1, "default": 30 },
+            "max_entries": { "type": "integer", "minimum": 1, "default": 500 },
+            "min_samples_for_trend": { "type": "integer", "minimum": 3, "default": 5 },
+            "velocity_window": { "type": "integer", "minimum": 2, "default": 5 },
+            "classification_thresholds": {
+              "type": "object",
+              "properties": {
+                "improving": { "type": "number", "default": 2 },
+                "degrading": { "type": "number", "default": -2 },
+                "volatile_stddev": { "type": "number", "minimum": 0, "default": 10 }
+              }
+            }
+          }
+        },
+        "attention_budget": {
+          "type": "object",
+          "description": "Limits on recommendation output to prevent overload.",
+          "properties": {
+            "max_recommendations": { "type": "integer", "minimum": 1, "default": 5 },
+            "per_domain_max": { "type": "integer", "minimum": 1, "default": 3 },
+            "persona_overrides": {
+              "type": "object",
+              "additionalProperties": { "type": "integer", "minimum": 1 }
+            }
+          }
+        },
+        "autonomy": {
+          "type": "object",
+          "required": ["levels", "action_types", "safety_invariants"],
+          "properties": {
+            "levels": {
+              "type": "object",
+              "description": "Autonomy level definitions.",
+              "additionalProperties": {
+                "type": "object",
+                "required": ["requires_approval", "description"],
+                "properties": {
+                  "requires_approval": { "type": "boolean" },
+                  "description": { "type": "string" }
+                }
+              }
+            },
+            "action_types": {
+              "type": "object",
+              "description": "Action type definitions with default autonomy level.",
+              "additionalProperties": {
+                "type": "object",
+                "required": ["default_level", "blast_radius", "reversible"],
+                "properties": {
+                  "default_level": { "type": "string", "enum": ["auto", "notify", "approve", "blocked"] },
+                  "blast_radius": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+                  "reversible": { "type": "boolean" }
+                }
+              }
+            },
+            "safety_invariants": {
+              "type": "array",
+              "description": "Safety rules that can only tighten autonomy, never loosen.",
+              "items": {
+                "type": "object",
+                "required": ["rule"],
+                "properties": {
+                  "rule": { "type": "string" },
+                  "enforced_level": { "type": "string", "enum": ["auto", "notify", "approve", "blocked"] },
+                  "minimum_level": { "type": "string", "enum": ["auto", "notify", "approve", "blocked"] },
+                  "description": { "type": "string" }
+                }
+              }
+            },
+            "effectiveness_thresholds": {
+              "type": "object",
+              "properties": {
+                "min_samples": { "type": "integer", "minimum": 1, "default": 3 },
+                "auto_threshold": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.8 },
+                "notify_threshold": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.5 }
+              }
+            }
+          }
+        },
+        "personas": {
+          "type": "object",
+          "description": "Human user persona definitions for output filtering.",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["description", "output_level"],
+            "properties": {
+              "description": { "type": "string" },
+              "output_level": { "type": "string" },
+              "max_lines": { "type": ["integer", "null"] },
+              "fields": { "type": "array", "items": { "type": "string" } },
+              "focus": { "type": "string" }
+            }
+          }
+        },
+        "hats": {
+          "type": "object",
+          "description": "Hat definitions for attentional bias.",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["description"],
+            "properties": {
+              "description": { "type": "string" },
+              "domain_emphasis": {
+                "type": "object",
+                "additionalProperties": { "type": "number", "minimum": 0 }
+              },
+              "suggest_when": { "type": "array" },
+              "autonomy_bias": {
+                "type": "object",
+                "additionalProperties": { "type": "string", "enum": ["auto", "notify", "approve", "blocked"] }
+              }
+            }
+          },
+          "default": {}
+        },
+        "correlations": {
+          "type": "array",
+          "description": "Cross-domain correlation rules.",
+          "items": {
+            "type": "object",
+            "required": ["name", "from_domain", "to_domain"],
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" },
+              "from_domain": { "type": "string" },
+              "to_domain": { "type": "string" },
+              "condition_tree": { "type": "object" }
+            }
+          },
+          "default": []
+        },
+        "incident_patterns": {
+          "type": "array",
+          "description": "Incident pattern definitions for multi-signal detection.",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "conditions"],
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "description": { "type": "string" },
+              "conditions": { "type": "object" },
+              "hypothesis": { "type": "string" },
+              "severity_base": { "type": "string", "enum": ["info", "warning", "critical"] },
+              "skill_remediation": { "type": "string" }
+            }
+          },
+          "default": []
+        },
+        "sensory_servers": {
+          "type": "object",
+          "description": "MCP sensory server configurations (v2). The Brain discovers and invokes these via MCP protocol. See spec Section 3.7 + Appendix F. MCP is the sensory contract; A2A is the peer-Brain contract (see 'children' and 'dual_brain').",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "command": { "type": "string", "description": "Binary or script to spawn (for stdio transport)." },
+              "args": { "type": "array", "items": { "type": "string" }, "default": [] },
+              "url": { "type": "string", "format": "uri", "description": "HTTP endpoint (for http transport)." },
+              "transport": { "type": "string", "enum": ["stdio", "http"], "default": "stdio" },
+              "env": { "type": "object", "additionalProperties": { "type": "string" } }
+            }
+          }
+        },
+        "children": {
+          "type": "object",
+          "description": "Fractal composition child Brain registrations (spec Section 9). Each entry selects a transport: 'a2a_endpoint' set -> A2A (RECOMMENDED v2.1+); 'brain_path' only -> subprocess (legacy, conformant). MCP is NOT used for child invocation — see 'sensory_servers' for MCP.",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["interface_version"],
+            "properties": {
+              "display_name": { "type": "string" },
+              "brain_path": {
+                "type": "string",
+                "description": "Path to child Brain entry point for subprocess transport (legacy)."
+              },
+              "a2a_endpoint": {
+                "type": "string",
+                "format": "uri",
+                "description": "Base URL of child Brain A2A server. Presence selects A2A transport. RECOMMENDED for v2.1+."
+              },
+              "agent_card_url": {
+                "type": "string",
+                "format": "uri",
+                "description": "Optional override for child Agent Card location. Default: {a2a_endpoint}/.well-known/agent-card.json."
+              },
+              "interface_version": { "type": "string", "default": "1" },
+              "depends_on": { "type": "array", "items": { "type": "string" }, "default": [] },
+              "weight": { "type": "number", "minimum": 0, "maximum": 1, "default": 1.0 },
+              "enabled": { "type": "boolean", "default": true }
+            },
+            "additionalProperties": true
+          }
+        },
+        "dual_brain": {
+          "type": "object",
+          "description": "Dual brain configuration (Stage 6). Ignored by local-only brains. In v2.1+, inter-brain communication uses A2A (see spec Section 10.4 + Appendix G); legacy shared-file event transport is permitted as a degraded mode.",
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "local_brain_id": { "type": "string" },
+            "external_brain_id": { "type": "string" },
+            "peer_endpoint": {
+              "type": "string",
+              "format": "uri",
+              "description": "A2A base URL of the peer Brain. v2.1+ RECOMMENDED path."
+            },
+            "peer_agent_card_url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Optional override for peer Agent Card location."
+            },
+            "shared_state": { "type": "object", "description": "Shared-state file configuration (persists across v2.1 A2A adoption; state is orthogonal to messaging)." },
+            "event_transport": {
+              "type": "object",
+              "description": "Transport for dual-brain events. v2.1+ RECOMMENDED: A2A. Legacy: shared file (event-log.jsonl).",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "enum": ["a2a", "shared_file"],
+                  "default": "a2a",
+                  "description": "'a2a' uses Agent2Agent protocol (RECOMMENDED). 'shared_file' is the legacy degraded-mode transport."
+                }
+              }
+            },
+            "sync": { "type": "object" }
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/keenanHoffmanSparq/LSP-Brains/schemas/cmdb-envelope-v1.schema.json",
+  "title": "CMDB Meta Envelope v1",
+  "description": "Every CMDB file written by a sensory tool MUST include this envelope. The meta block enables the Brain to detect schema versions, compute confidence from age, and identify the producing tool.",
+  "type": "object",
+  "required": ["meta", "score", "updated_at"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["schema_version", "updated_at", "updated_by"],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "description": "CMDB schema version. Current: '1'.",
+          "const": "1"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 UTC timestamp of when this snapshot was taken."
+        },
+        "updated_by": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier of the tool that wrote this CMDB (e.g., 'check-test-health', 'jira-sensory')."
+        },
+        "source": {
+          "type": "string",
+          "description": "Human-readable description of the external source observed."
+        }
+      },
+      "additionalProperties": false
+    },
+    "score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Health score for this domain (0 = worst, 100 = best)."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp. Duplicates meta.updated_at for flat access by the scoring engine."
+    },
+    "findings": {
+      "type": "array",
+      "description": "Array of observation findings. Structure is domain-specific.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Identifier for this finding."
+          },
+          "status": {
+            "type": "string",
+            "description": "Result of the check (e.g., 'found', 'missing', 'pass', 'fail')."
+          },
+          "points": {
+            "type": "integer",
+            "description": "Score contribution of this finding."
+          },
+          "detail": {
+            "type": "string",
+            "description": "Human-readable explanation."
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

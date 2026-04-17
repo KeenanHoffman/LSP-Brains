@@ -1,0 +1,19 @@
+graph TD
+    ROOT["AND (root)"]
+
+    ROOT --> LEAF1["gates:deploy_blocking_count >= 1"]
+    ROOT --> OR1["OR"]
+    ROOT --> NOT1["NOT"]
+
+    OR1 --> LEAF2["artifacts:any_stale == true"]
+    OR1 --> LEAF3["infrastructure:drift_count > 0"]
+
+    NOT1 --> LEAF4["topology:all_annotated == true"]
+
+    style ROOT fill:#4a90d9,color:#fff
+    style OR1 fill:#d9944a,color:#fff
+    style NOT1 fill:#d94a4a,color:#fff
+    style LEAF1 fill:#4ad97a,color:#000
+    style LEAF2 fill:#4ad97a,color:#000
+    style LEAF3 fill:#4ad97a,color:#000
+    style LEAF4 fill:#4ad97a,color:#000

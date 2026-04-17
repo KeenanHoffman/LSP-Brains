@@ -1,0 +1,26 @@
+graph LR
+    subgraph Local["Local Brain (developer terminal)"]
+        LT["Trigger: file save, commit, manual"]
+        LS["Sensory: git status, lint, tests"]
+        LB["Scoring: fast, <5s latency"]
+        LG["Governance: gates, hooks"]
+    end
+
+    subgraph Shared["Shared State"]
+        REG["brain-registry.json<br/>(source truth)"]
+        GATES["test-gates.json<br/>(runtime truth)"]
+        HIST["score-history.json<br/>(runtime truth)"]
+        LEDGER["proposal-ledger.json<br/>(runtime truth)"]
+    end
+
+    subgraph External["External Brain (cloud/CI)"]
+        ET["Trigger: webhook, schedule, CI event"]
+        ES["Sensory: cloud APIs, monitoring, SCA"]
+        EB["Scoring: comprehensive, minutes OK"]
+        EA["Aggregation: ecosystem, cross-project"]
+    end
+
+    Local <-->|"reads/writes"| Shared
+    External <-->|"reads/writes"| Shared
+    Local -.->|"A2A (spec §13)"| External
+    External -.->|"A2A (spec §13)"| Local

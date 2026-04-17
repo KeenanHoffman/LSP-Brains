@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant L as Local Brain
+    participant S as Shared State
+    participant E as External Brain
+
+    Note over L,E: Append-Merge (score history, ledgers)
+
+    L->>S: Append snapshot (scored_at=T1)
+    E->>S: Append snapshot (scored_at=T2)
+    L->>S: Read history
+    S-->>L: [T1, T2] (merged, deduplicated)
+
+    Note over L,E: Last-Writer-Wins (CMDBs, gates)
+
+    L->>S: Write code-quality-cmdb.json (updated_at=T3)
+    E->>S: Write ci-health-cmdb.json (updated_at=T4)
+    Note right of S: Each domain has single owner<br/>Non-owner reads only
+
+    Note over L,E: Event Protocol (optional)
+
+    L->>S: Append event (score.updated)
+    E->>S: Read events since last position
+    S-->>E: [score.updated at T1]
+    E->>S: Append event (ci.completed)
+    L->>S: Read events since last position
+    S-->>L: [ci.completed at T5]

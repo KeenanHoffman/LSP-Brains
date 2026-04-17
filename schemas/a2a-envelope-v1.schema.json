@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/keenanHoffmanSparq/LSP-Brains/schemas/a2a-envelope-v1.schema.json",
+  "title": "A2A Message Envelope v1",
+  "description": "Envelope format for Brain-to-Brain A2A (Agent2Agent) messages. Wraps the 10 dual-brain event types defined in LSP-BRAINS-SPEC.md Section 10.4. Used for fractal composition (parent/child) and dual brain (local/external) coordination. Not used for sensory tool invocation — see MCP sensory contract (cmdb-envelope-v1).",
+  "type": "object",
+  "required": ["message_id", "timestamp", "brain_id", "message_type", "schema_version"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1",
+      "description": "Envelope schema version."
+    },
+    "message_id": {
+      "type": "string",
+      "description": "Unique message identifier (UUID v4 RECOMMENDED). Used as idempotency key — duplicate receipt MUST be a no-op that returns the cached response."
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Correlation ID for multi-message tasks. Optional for one-shot messages; REQUIRED for streaming tasks."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp of message origination."
+    },
+    "brain_id": {
+      "type": "string",
+      "description": "Identifier of the originating Brain. Matches the id in its Agent Card (agent-card-v1)."
+    },
+    "message_type": {
+      "type": "string",
+      "enum": [
+        "score.updated",
+        "gate.changed",
+        "ecosystem.scored",
+        "incident.detected",
+        "incident.resolved",
+        "snapshot.requested",
+        "snapshot.delivered",
+        "proposal.created",
+        "proposal.resolved",
+        "config.changed"
+      ],
+      "description": "One of the 10 canonical A2A message types. Payload shape varies by type; see Section 10.4 + Appendix G."
+    },
+    "reply_to": {
+      "type": "string",
+      "description": "For request/response patterns (e.g., snapshot.requested -> snapshot.delivered): the message_id being answered."
+    },
+    "payload": {
+      "type": "object",
+      "description": "Message-type-specific payload. Conforming impls SHOULD validate payload against the per-type schema documented in Appendix G.",
+      "additionalProperties": true
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Transport/routing metadata. Impls MAY use this for delivery hints, trace IDs, auth tokens (when auth is configured).",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

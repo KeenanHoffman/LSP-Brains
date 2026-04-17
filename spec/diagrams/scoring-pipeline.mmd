@@ -1,0 +1,32 @@
+graph LR
+    subgraph Sensory["Sensory Tools (any language)"]
+        ST1["check-code-quality"]
+        ST2["check-test-health"]
+        ST3["check-deploy-readiness"]
+    end
+
+    subgraph CMDB["CMDB Files (JSON)"]
+        C1["code-quality-cmdb.json<br/>score: 85, updated_at: ..."]
+        C2["test-health-cmdb.json<br/>score: 65, updated_at: ..."]
+        C3["deploy-readiness-cmdb.json<br/>score: 70, updated_at: ..."]
+    end
+
+    subgraph Brain["Brain Scoring Engine"]
+        RAW["Raw Score<br/>cmdb[score_field]"]
+        CONF["Confidence<br/>age(updated_at) → decay"]
+        EFF["Effective Score<br/>raw × confidence/100"]
+        UNI["Unified Score<br/>Σ(effective × weight)"]
+    end
+
+    ST1 --> C1
+    ST2 --> C2
+    ST3 --> C3
+    C1 --> RAW
+    C2 --> RAW
+    C3 --> RAW
+    C1 --> CONF
+    C2 --> CONF
+    C3 --> CONF
+    RAW --> EFF
+    CONF --> EFF
+    EFF --> UNI

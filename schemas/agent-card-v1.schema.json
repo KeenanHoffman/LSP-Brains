@@ -1,0 +1,133 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/keenanHoffmanSparq/LSP-Brains/schemas/agent-card-v1.schema.json",
+  "title": "Agent Card v1",
+  "description": "Agent Card for an LSP Brain acting as an A2A peer. Published at /.well-known/agent-card.json. Declares identity, capabilities, transport, and authentication. Consumed by peer Brains (parent/child, local/external) to discover and invoke this Brain.",
+  "type": "object",
+  "required": ["schema_version", "id", "name", "version", "capabilities", "transport"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1",
+      "description": "Agent Card schema version."
+    },
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for this Brain instance. Stable across restarts."
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable name."
+    },
+    "version": {
+      "type": "string",
+      "description": "Brain software version (e.g., '0.1.0'). Informational; does not imply protocol compatibility."
+    },
+    "interface_version": {
+      "type": "string",
+      "description": "agent-output-v1 interface version this Brain produces. Consumers match this against their expectations.",
+      "default": "1"
+    },
+    "capabilities": {
+      "type": "object",
+      "description": "Which A2A message types this Brain accepts as a server and emits as a client.",
+      "required": ["accepts", "emits"],
+      "properties": {
+        "accepts": {
+          "type": "array",
+          "description": "Message types this Brain can receive and act on.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "score.updated",
+              "gate.changed",
+              "ecosystem.scored",
+              "incident.detected",
+              "incident.resolved",
+              "snapshot.requested",
+              "snapshot.delivered",
+              "proposal.created",
+              "proposal.resolved",
+              "config.changed"
+            ]
+          }
+        },
+        "emits": {
+          "type": "array",
+          "description": "Message types this Brain produces.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "score.updated",
+              "gate.changed",
+              "ecosystem.scored",
+              "incident.detected",
+              "incident.resolved",
+              "snapshot.requested",
+              "snapshot.delivered",
+              "proposal.created",
+              "proposal.resolved",
+              "config.changed"
+            ]
+          }
+        },
+        "streaming": {
+          "type": "boolean",
+          "description": "Whether this Brain supports long-running tasks with progress streaming (SSE).",
+          "default": false
+        }
+      }
+    },
+    "transport": {
+      "type": "object",
+      "required": ["protocol", "endpoint"],
+      "properties": {
+        "protocol": {
+          "type": "string",
+          "enum": ["http+sse", "json-rpc"],
+          "description": "Wire protocol. 'http+sse' is RECOMMENDED (default); 'json-rpc' is permitted for compatibility."
+        },
+        "endpoint": {
+          "type": "string",
+          "format": "uri",
+          "description": "Base URL for task endpoints (e.g., 'https://brain.example.com/a2a/v1/')."
+        },
+        "tasks_path": {
+          "type": "string",
+          "description": "Path suffix for task endpoints. Default: '/tasks'.",
+          "default": "/tasks"
+        }
+      },
+      "additionalProperties": false
+    },
+    "authentication": {
+      "type": "object",
+      "description": "Auth scheme for this peer. v2.1 of the spec only supports 'none' (dev/trusted-network). Future versions will add bearer tokens and mutual TLS.",
+      "properties": {
+        "scheme": {
+          "type": "string",
+          "enum": ["none"],
+          "default": "none",
+          "description": "v2.1: only 'none' is supported. Adopters requiring auth MUST gate access at the network layer until a future spec version adds bearer/mtls."
+        }
+      },
+      "additionalProperties": false
+    },
+    "topology": {
+      "type": "object",
+      "description": "Optional: this Brain's role in a fractal composition / dual brain topology.",
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": ["project", "ecosystem", "local", "external"],
+          "description": "'project' = leaf child in fractal comp. 'ecosystem' = parent aggregator. 'local'/'external' = dual brain halves."
+        },
+        "parent_id": {
+          "type": "string",
+          "description": "brain_id of the parent in a fractal tree, if any."
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

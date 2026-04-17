@@ -1,0 +1,134 @@
+{
+  "meta": {
+    "schema_version": "2",
+    "description": "LSP-Brains Brain — first Brain scoring a specification rather than a codebase. Seven advisory domains measure spec quality: completeness, schema validity, link integrity, glossary freshness, diagram sync, RFC 2119 compliance, changelog hygiene. 'Ideas as code' — the methodology is a scorable subject like anything else.",
+    "updated_by": "hand-maintained",
+    "project": "LSP-Brains",
+    "note": "All domains advisory (weight 0.0) for v1 — sensory tools are future work. CMDBs are stubs at score 0 until the sensory tools are built. This is the honest state per spec principle #2."
+  },
+  "tools": {},
+  "data_sources": {},
+  "config": {
+    "domain_weights": {
+      "spec-completeness":    0.0,
+      "schema-validity":      0.0,
+      "link-integrity":       0.0,
+      "glossary-freshness":   0.0,
+      "diagram-sync":         0.0,
+      "rfc-2119-compliance":  0.0,
+      "changelog-hygiene":    0.0
+    },
+    "advisory_domains": [
+      "spec-completeness",
+      "schema-validity",
+      "link-integrity",
+      "glossary-freshness",
+      "diagram-sync",
+      "rfc-2119-compliance",
+      "changelog-hygiene"
+    ],
+    "principle_map": {
+      "spec-completeness":   "Spec Completeness",
+      "schema-validity":     "Schema Validity",
+      "link-integrity":      "Link Integrity",
+      "glossary-freshness":  "Glossary Freshness",
+      "diagram-sync":        "Diagram Sync",
+      "rfc-2119-compliance": "RFC 2119 Compliance",
+      "changelog-hygiene":   "Changelog Hygiene"
+    },
+    "domain_definitions": {
+      "_doc": "All domains read CMDB stubs until sensory tools land. Placeholder scores at 0 reflect unknown state; per spec principle #2 (scoring must be honest), unknown is not good.",
+      "spec-completeness": {
+        "scoring_source": {
+          "type": "cmdb",
+          "path": ".claude/spec-completeness-cmdb.json"
+        }
+      },
+      "schema-validity": {
+        "scoring_source": {
+          "type": "cmdb",
+          "path": ".claude/schema-validity-cmdb.json"
+        }
+      },
+      "link-integrity": {
+        "scoring_source": {
+          "type": "cmdb",
+          "path": ".claude/link-integrity-cmdb.json"
+        }
+      },
+      "glossary-freshness": {
+        "scoring_source": {
+          "type": "cmdb",
+          "path": ".claude/glossary-freshness-cmdb.json"
+        }
+      },
+      "diagram-sync": {
+        "scoring_source": {
+          "type": "cmdb",
+          "path": ".claude/diagram-sync-cmdb.json"
+        }
+      },
+      "rfc-2119-compliance": {
+        "scoring_source": {
+          "type": "cmdb",
+          "path": ".claude/rfc-2119-compliance-cmdb.json"
+        }
+      },
+      "changelog-hygiene": {
+        "scoring_source": {
+          "type": "cmdb",
+          "path": ".claude/changelog-hygiene-cmdb.json"
+        }
+      }
+    },
+    "domain_variables": {},
+    "scoring": {
+      "model": "multiplier",
+      "floor_confidence_threshold": 30,
+      "floor_score_ceiling": 30
+    },
+    "gate_tiers": {
+      "immediate":    { "scoring_weight": 0.50, "priority_weight": 4.0 },
+      "before-merge": { "scoring_weight": 0.30, "priority_weight": 3.0 },
+      "pre-deploy":   { "scoring_weight": 0.20, "priority_weight": 2.0 }
+    },
+    "confidence_thresholds": {
+      "cmdb_fresh_days":      1,
+      "cmdb_stale_days":      3,
+      "cmdb_very_stale_days": 7
+    },
+    "severity_thresholds": {
+      "warning_count":           3,
+      "critical_count":          5,
+      "recurrence_window_days":  7
+    },
+    "trajectory": {
+      "retention_days":         30,
+      "min_samples_for_trend":   5,
+      "velocity_window":         5
+    },
+    "autonomy": {
+      "levels": {
+        "auto":    { "requires_approval": false, "description": "Executes without human intervention" },
+        "notify":  { "requires_approval": false, "description": "Executes, notifies human after" },
+        "approve": { "requires_approval": true,  "description": "Requires human approval before execution" },
+        "blocked": { "requires_approval": true,  "description": "Cannot execute regardless of confidence" }
+      },
+      "action_types": {
+        "clear-gate":       { "default_level": "notify",  "blast_radius": "low",      "reversible": true  },
+        "refresh-snapshot": { "default_level": "auto",    "blast_radius": "low",      "reversible": true  },
+        "edit-spec":        { "default_level": "approve", "blast_radius": "medium",   "reversible": true  },
+        "publish-spec":     { "default_level": "approve", "blast_radius": "high",     "reversible": false }
+      },
+      "safety_invariants": [
+        { "rule": "destroy_always_blocked", "enforced_level": "blocked", "description": "Destructive actions MUST remain blocked regardless of confidence" },
+        { "rule": "publish-never-auto",     "minimum_level":  "approve", "description": "Publishing a spec version requires human approval" }
+      ]
+    },
+    "hats": {},
+    "correlations": [],
+    "incident_patterns": [],
+    "sensory_servers": {},
+    "children": {}
+  }
+}

@@ -1,0 +1,50 @@
+graph LR
+    subgraph P0["Phase 0: Local Only"]
+        P0L["Local Brain"]
+        P0S["Local Files"]
+        P0L <--> P0S
+    end
+
+    subgraph P1["Phase 1: Shared State"]
+        P1L["Local Brain"]
+        P1S["Shared Store<br/>(cloud/git)"]
+        P1L <--> P1S
+    end
+
+    subgraph P2["Phase 2: External Sensory"]
+        P2L["Local Brain"]
+        P2S["Shared Store"]
+        P2E["External<br/>Sensory Tools"]
+        P2L <--> P2S
+        P2E -->|"write CMDBs"| P2S
+    end
+
+    subgraph P3["Phase 3: Dual Brain"]
+        P3L["Local Brain"]
+        P3S["Shared Store"]
+        P3E["External Brain"]
+        P3L <--> P3S
+        P3E <--> P3S
+    end
+
+    subgraph P4["Phase 4: Events"]
+        P4L["Local Brain"]
+        P4S["Shared Store"]
+        P4E["External Brain"]
+        P4R["Event Router"]
+        P4L <--> P4S
+        P4E <--> P4S
+        P4L <-.-> P4R
+        P4E <-.-> P4R
+    end
+
+    P0 -->|"Zero code changes"| P1
+    P1 -->|"Zero code changes"| P2
+    P2 -->|"Zero code changes"| P3
+    P3 -->|"Minimal changes"| P4
+
+    style P0 fill:#f8d7da,stroke:#dc3545
+    style P1 fill:#fff3cd,stroke:#ffc107
+    style P2 fill:#d1ecf1,stroke:#17a2b8
+    style P3 fill:#d4edda,stroke:#28a745
+    style P4 fill:#cce5ff,stroke:#007bff

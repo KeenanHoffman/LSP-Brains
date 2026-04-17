@@ -1,0 +1,37 @@
+graph LR
+    subgraph Step1["Step 1: Base Level"]
+        HAT{"Hat active?"}
+        HATBIAS["Hat autonomy_bias<br/>for action_type"]
+        DEFAULT["action_type<br/>default_level"]
+    end
+
+    subgraph Step2["Step 2: Confidence"]
+        CONF["Compute from<br/>proposal effectiveness"]
+        THRESH{"rate ≥ auto? → auto<br/>rate ≥ notify? → notify<br/>else → approve"}
+    end
+
+    subgraph Step3["Step 3: Merge"]
+        MERGE["Take MORE restrictive<br/>of Step 1 and Step 2"]
+    end
+
+    subgraph Step4["Step 4: Safety"]
+        SAFETY["Apply safety invariants<br/>(can only tighten)"]
+        INV1["destroy_always_blocked"]
+        INV2["deploy_never_auto"]
+    end
+
+    subgraph Step5["Step 5: Override"]
+        OVERRIDE["Global override<br/>(can only tighten)"]
+    end
+
+    HAT -->|yes| HATBIAS
+    HAT -->|no| DEFAULT
+    HATBIAS --> MERGE
+    DEFAULT --> MERGE
+    CONF --> THRESH
+    THRESH --> MERGE
+    MERGE --> SAFETY
+    INV1 --> SAFETY
+    INV2 --> SAFETY
+    SAFETY --> OVERRIDE
+    OVERRIDE --> FINAL["Final Autonomy Level<br/>auto | notify | approve | blocked"]

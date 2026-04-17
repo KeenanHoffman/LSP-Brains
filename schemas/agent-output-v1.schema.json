@@ -1,0 +1,405 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Moth(er):Br+AI+n Agent Output",
+  "description": "Versioned interface contract for -Mode agent JSON output. Schema version 1.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "scored_at",
+    "score",
+    "domains",
+    "dirty_gates",
+    "stale_artifacts",
+    "domain_variables",
+    "top_recommendations",
+    "correlations_fired",
+    "incident_patterns",
+    "skipped_temporal"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1",
+      "description": "Interface contract version. Consumers validate they understand this version."
+    },
+    "scored_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp of when scoring was performed. Freshness guarantee for all consumers."
+    },
+    "score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Unified confidence-weighted health score across all domains."
+    },
+    "domains": {
+      "type": "object",
+      "description": "Per-domain health scores. Keys are domain names from brain-registry.json.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["score", "effective_score", "confidence", "weight"],
+        "additionalProperties": false,
+        "properties": {
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Raw domain score before confidence weighting."
+          },
+          "effective_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Score after confidence weighting."
+          },
+          "confidence": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Confidence level in the domain score (0 = no data, 100 = fully observed)."
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Domain weight in unified score. Advisory domains use 0.0."
+          },
+          "trajectory": {
+            "type": "object",
+            "description": "Domain-level trajectory from score history (S5-TP-4).",
+            "required": ["velocity", "acceleration", "classification", "samples"],
+            "additionalProperties": false,
+            "properties": {
+              "velocity": { "type": "number", "description": "Score change rate: avg(recent) - avg(previous)" },
+              "acceleration": { "type": "number", "description": "Change in velocity" },
+              "classification": { "type": "string", "enum": ["improving", "stable", "degrading", "volatile", "no-data"], "description": "Trend classification" },
+              "samples": { "type": "integer", "minimum": 0, "description": "Number of score history snapshots" }
+            }
+          }
+        }
+      }
+    },
+    "dirty_gates": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Gate keys with status 'dirty' (last run failed)."
+    },
+    "stale_artifacts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Artifact keys where freshness is 'stale'."
+    },
+    "domain_variables": {
+      "type": "object",
+      "description": "Cross-domain signal variables (domain:signal_name pattern). Values are booleans, integers, or strings.",
+      "additionalProperties": {
+        "type": ["boolean", "integer", "string", "number"]
+      }
+    },
+    "top_recommendations": {
+      "type": "array",
+      "description": "Top-5 prioritized remediation actions, dependency-ordered.",
+      "items": {
+        "type": "object",
+        "required": ["domain", "gate", "status", "command", "blocks", "depends_on"],
+        "additionalProperties": false,
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Domain that owns this recommendation."
+          },
+          "gate": {
+            "type": "string",
+            "description": "Gate key to be cleared."
+          },
+          "status": {
+            "type": "string",
+            "description": "Current gate status (dirty, needs-run, stale)."
+          },
+          "command": {
+            "type": "string",
+            "description": "Exact command to clear the gate."
+          },
+          "blocks": {
+            "description": "What this gate blocks (commit, merge, deploy).",
+            "type": ["string", "array"],
+            "items": { "type": "string" }
+          },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Gate keys that should be cleared first."
+          },
+          "skill": {
+            "type": "string",
+            "description": "Skill reference for remediation guidance. Present only for gates in gate_skill_map."
+          }
+        }
+      }
+    },
+    "correlations_fired": {
+      "type": "array",
+      "description": "Cross-domain correlation rules that matched current state.",
+      "items": {
+        "type": "object",
+        "required": ["id", "description"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Correlation rule name from brain-registry.json."
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable correlation description."
+          },
+          "skill": {
+            "type": "string",
+            "description": "Skill reference for remediation. Present when skill_remediation is defined."
+          }
+        }
+      }
+    },
+    "incident_patterns": {
+      "type": "array",
+      "description": "Matched incident patterns with enriched narratives.",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "hypothesis", "narrative", "signals", "severity", "recurrence_count"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Incident pattern identifier from brain-registry.json."
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable incident name."
+          },
+          "hypothesis": {
+            "type": "string",
+            "description": "Causal hypothesis explaining what the signals mean together."
+          },
+          "narrative": {
+            "type": "string",
+            "description": "Full narrative with signals, recurrence count, and remediation."
+          },
+          "signals": {
+            "type": "object",
+            "description": "Domain variables that triggered this pattern.",
+            "additionalProperties": {
+              "type": ["boolean", "integer", "string", "number"]
+            }
+          },
+          "skill_remediation": {
+            "type": "string",
+            "description": "Skill reference for incident remediation."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["info", "warning", "critical"],
+            "description": "Computed severity based on recurrence thresholds."
+          },
+          "recurrence_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of times this pattern has fired in the incident ledger."
+          },
+          "affected_children": {
+            "type": "array",
+            "description": "Child project IDs affected by this cross-project incident pattern (S4-FC-3). Only present when pattern references child.* variables.",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "skipped_temporal": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Temporal incident patterns skipped due to missing ledger data."
+    },
+    "proposal_effectiveness": {
+      "type": "object",
+      "description": "Per-action-type effectiveness statistics from the proposal ledger.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["avg_delta", "sample_count", "sufficient"],
+        "additionalProperties": false,
+        "properties": {
+          "avg_delta": {
+            "type": "number",
+            "description": "Average score delta after executing this action type."
+          },
+          "sample_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of resolved proposals of this action type."
+          },
+          "sufficient": {
+            "type": "boolean",
+            "description": "Whether sample_count meets the minimum threshold for reliability."
+          },
+          "effectiveness_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Fraction of resolved proposals where score delta > 0 (success rate)."
+          },
+          "success_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of resolved proposals where score delta > 0."
+          }
+        }
+      }
+    },
+    "recent_outcomes": {
+      "type": "array",
+      "description": "Recent proposal outcomes from the last 7 days.",
+      "items": {
+        "type": "object",
+        "required": ["timestamp", "pre_score", "post_score", "delta", "actions", "resolved"],
+        "additionalProperties": false,
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "description": "ISO 8601 UTC timestamp of the proposal."
+          },
+          "pre_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Brain score before the proposal was executed."
+          },
+          "post_score": {
+            "type": ["integer", "null"],
+            "description": "Brain score after execution. Null if unresolved."
+          },
+          "delta": {
+            "type": ["integer", "null"],
+            "description": "Score change. Null if unresolved."
+          },
+          "actions": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Action types from the proposal."
+          },
+          "resolved": {
+            "type": "boolean",
+            "description": "Whether the outcome has been resolved with a post_score."
+          },
+          "hat": {
+            "type": "string",
+            "description": "Hat that was active when the proposal was generated."
+          }
+        }
+      }
+    },
+    "current_hat": {
+      "type": "string",
+      "description": "Active hat name when -Hat parameter was provided."
+    },
+    "current_persona": {
+      "type": "string",
+      "enum": ["executive", "manager", "developer", "specialist", "product-manager"],
+      "description": "Active persona when -Persona parameter was provided. Hat controls WHAT is emphasized; persona controls HOW MUCH detail is shown."
+    },
+    "suggested_hat": {
+      "type": "object",
+      "description": "Hat suggestion based on domain variable signals.",
+      "required": ["hat", "reason", "signals"],
+      "additionalProperties": false,
+      "properties": {
+        "hat": {
+          "type": "string",
+          "description": "Suggested hat name."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Hat description explaining why this hat is relevant."
+        },
+        "signals": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of matching suggest_when conditions."
+        }
+      }
+    },
+    "trajectory": {
+      "type": "object",
+      "description": "Unified score trajectory computed from score history (S5-TP-4).",
+      "required": ["velocity", "acceleration", "classification", "samples"],
+      "additionalProperties": false,
+      "properties": {
+        "velocity": { "type": "number", "description": "Score change rate: avg(recent window) - avg(previous window)" },
+        "acceleration": { "type": "number", "description": "Change in velocity (second derivative)" },
+        "classification": { "type": "string", "enum": ["improving", "stable", "degrading", "volatile", "no-data"], "description": "Trend classification based on velocity and volatility" },
+        "samples": { "type": "integer", "minimum": 0, "description": "Number of score history snapshots used" }
+      }
+    },
+    "children": {
+      "type": "array",
+      "description": "Child Brain scores for ecosystem-level aggregation (S4-FC-2). Only present in -Mode ecosystem output.",
+      "items": {
+        "type": "object",
+        "required": ["project_id", "score", "scored_at", "confidence", "weight", "freshness_multiplier", "effective_score", "domains", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "description": "Child project identifier from ecosystem-registry.json."
+          },
+          "display_name": {
+            "type": "string",
+            "description": "Human-readable child project name."
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Child unified score from its -Mode agent output."
+          },
+          "scored_at": {
+            "type": "string",
+            "description": "ISO 8601 UTC timestamp from child scoring. Used for freshness computation."
+          },
+          "confidence": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Average confidence across child domains."
+          },
+          "weight": {
+            "type": "number",
+            "description": "Per-child weight from ecosystem-registry.json for aggregation."
+          },
+          "freshness_multiplier": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Freshness decay applied to child scored_at via Get-CmdbFreshnessMultiplier."
+          },
+          "effective_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Child score adjusted for confidence and freshness: score * (confidence/100) * freshness_multiplier."
+          },
+          "domains": {
+            "type": "object",
+            "description": "Pass-through of child domain scores from its -Mode agent output."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ok", "error", "stale", "disabled"],
+            "description": "Child invocation result: ok (success), error (failed/invalid), stale (freshness < 0.5), disabled (registry disabled)."
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+# Python (sensory tools)
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Local Claude Code session state (harness-managed, not source)
+.claude/settings.local.json
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log

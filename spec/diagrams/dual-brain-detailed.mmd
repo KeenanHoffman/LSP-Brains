@@ -1,0 +1,76 @@
+graph TD
+    subgraph Triggers["Trigger Sources"]
+        T1["file.changed<br/>(editor hook)"]
+        T2["git.committed<br/>(pre/post-commit)"]
+        T3["manual.invoked<br/>(CLI)"]
+        T4["ci.completed<br/>(webhook)"]
+        T5["webhook.received<br/>(Jira, GH, etc.)"]
+        T6["schedule.fired<br/>(cron)"]
+        T7["snapshot.requested<br/>(cross-brain)"]
+    end
+
+    subgraph Local["Local Brain"]
+        LS1["Sensory: git status"]
+        LS2["Sensory: lint/format"]
+        LS3["Sensory: test results"]
+        LS4["Sensory: file analysis"]
+        LSCORE["Scoring Engine<br/>(<5s latency)"]
+        LGOV["Governance<br/>(gates, hooks, autonomy)"]
+        LOUT["agent-output.json"]
+    end
+
+    subgraph Shared["Shared State Layer"]
+        SR["brain-registry.json<br/>(source truth)"]
+        SG["test-gates.json<br/>(runtime, last-writer-wins)"]
+        SH["score-history.json<br/>(runtime, append-merge)"]
+        SP["proposal-ledger.json<br/>(runtime, append-merge)"]
+        SI["incident-ledger.json<br/>(runtime, append-merge)"]
+        SE["event-log.jsonl<br/>(append-only, A2A degraded-mode only)"]
+        SC["*-cmdb.json<br/>(runtime, owner-writes)"]
+    end
+
+    subgraph External["External Brain"]
+        ES1["Sensory: CI/CD APIs"]
+        ES2["Sensory: issue tracker"]
+        ES3["Sensory: SCA databases"]
+        ES4["Sensory: monitoring"]
+        ESCORE["Scoring Engine<br/>(<5min latency)"]
+        EAGG["Ecosystem<br/>Aggregation"]
+        EOUT["agent-output.json"]
+    end
+
+    T1 --> Local
+    T2 --> Local
+    T3 --> Local
+    T4 --> External
+    T5 --> External
+    T6 --> External
+    T7 -.->|"request"| Local
+    T3 -.->|"if target=external"| External
+
+    LS1 --> LSCORE
+    LS2 --> LSCORE
+    LS3 --> LSCORE
+    LS4 --> LSCORE
+    LSCORE --> LGOV
+    LGOV --> LOUT
+
+    ES1 --> ESCORE
+    ES2 --> ESCORE
+    ES3 --> ESCORE
+    ES4 --> ESCORE
+    ESCORE --> EAGG
+    EAGG --> EOUT
+
+    Local <-->|"read/write"| Shared
+    External <-->|"read/write"| Shared
+
+    LOUT -.->|"A2A score.updated"| EOUT
+    EOUT -.->|"A2A ecosystem.scored"| LOUT
+    LOUT -.->|"(degraded) event-log"| SE
+    EOUT -.->|"(degraded) event-log"| SE
+
+    style Triggers fill:#f0f0f0,stroke:#666
+    style Local fill:#d4edda,stroke:#28a745
+    style Shared fill:#fff3cd,stroke:#ffc107
+    style External fill:#cce5ff,stroke:#007bff

@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/keenanHoffmanSparq/LSP-Brains/schemas/culture-manifest-v1.schema.json",
+  "title": "Culture Manifest v1",
+  "description": "Declarative cultural substrate for LSP Brains agents. Declares the values that govern how agents communicate — agent↔agent and agent↔human. Distributed as identical copies across all participating agents (peer-local, not inherited). Culture invariants are analogous to safety invariants (spec §5.5): they can only tighten, never loosen. A human preference (human-comms) can slide style within culture's floor; it cannot cross it.",
+  "type": "object",
+  "required": ["schema_version", "version", "values", "application"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1",
+      "description": "Culture manifest schema version."
+    },
+    "version": {
+      "type": "string",
+      "description": "Semver of this manifest's content. Bumped when any value wording changes. Ecosystem Brain's culture-coherence domain diff-checks this version + content across the three copies."
+    },
+    "values": {
+      "type": "object",
+      "description": "The five canonical cultural values. Each is a short, enforceable statement of conduct.",
+      "required": ["positivity", "integrity", "honesty", "critical_but_kind", "respect"],
+      "properties": {
+        "positivity": {
+          "type": "string",
+          "description": "Assume good intent. Lead with what's working. Frame gaps as opportunities, not failures."
+        },
+        "integrity": {
+          "type": "string",
+          "description": "Do what you said. Flag when you can't. Never hide a failure."
+        },
+        "honesty": {
+          "type": "string",
+          "description": "Truthful even when uncomfortable. Calibrate uncertainty. No confident hallucination."
+        },
+        "critical_but_kind": {
+          "type": "string",
+          "description": "Tough on problems, gentle on people. Say the hard thing with care."
+        },
+        "respect": {
+          "type": "string",
+          "description": "Every interaction — agent↔agent and human↔agent — starts from respect."
+        }
+      },
+      "additionalProperties": false
+    },
+    "application": {
+      "type": "string",
+      "description": "One-sentence statement of the invariant semantics. Conformant implementations MUST treat these values as floor-level constraints applied after hats, personas, and human-comms overrides."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional human-readable notes. Not normative; documentation only."
+    }
+  },
+  "additionalProperties": false
+}
