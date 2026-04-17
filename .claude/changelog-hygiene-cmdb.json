@@ -1,20 +1,40 @@
 {
   "meta": {
     "updated_by": "check-changelog-hygiene",
-    "updated_at": "2026-04-17T18:07:49.296563Z",
+    "updated_at": "2026-04-17T19:15:21.196694Z",
     "source": "scan of spec ### Changelog block for METHODOLOGY-EVOLUTION.md \u00a7N citations; cross-check against METHODOLOGY-EVOLUTION ## N. headings",
     "schema_version": "1"
   },
   "score": 100,
-  "updated_at": "2026-04-17T18:07:49.296563Z",
+  "updated_at": "2026-04-17T19:15:21.196694Z",
   "findings": [
-    "Changelog entries parsed: 2",
-    "METHODOLOGY-EVOLUTION sections present: 7",
-    "Entries missing METHODOLOGY-EVOLUTION cite: 0",
-    "METH-EV sections with no changelog citation: 0"
+    {
+      "name": "finding-000",
+      "status": "info",
+      "points": 0,
+      "detail": "Changelog entries parsed: 3"
+    },
+    {
+      "name": "finding-001",
+      "status": "info",
+      "points": 0,
+      "detail": "METHODOLOGY-EVOLUTION sections present: 8"
+    },
+    {
+      "name": "finding-002",
+      "status": "info",
+      "points": 0,
+      "detail": "Entries missing METHODOLOGY-EVOLUTION cite: 0"
+    },
+    {
+      "name": "finding-003",
+      "status": "info",
+      "points": 0,
+      "detail": "METH-EV sections with no changelog citation: 0"
+    }
   ],
   "exported_variables": {
-    "changelog:entries": 2,
+    "changelog:entries": 3,
     "changelog:uncited_meth_ev": 0
   }
 }

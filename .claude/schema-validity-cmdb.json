@@ -1,18 +1,43 @@
 {
   "meta": {
     "updated_by": "check-schema-validity",
-    "updated_at": "2026-04-17T18:07:53.637505Z",
+    "updated_at": "2026-04-17T19:15:25.701993Z",
     "source": "parse of schemas/*.schema.json: draft-07 conformance, internal $ref resolution",
     "schema_version": "1"
   },
   "score": 100,
-  "updated_at": "2026-04-17T18:07:53.637505Z",
+  "updated_at": "2026-04-17T19:15:25.701993Z",
   "findings": [
-    "Schemas scanned: 6",
-    "Invalid JSON schemas: 0",
-    "Non-draft-07 schemas: 0",
-    "$ref occurrences: 0",
-    "Broken internal $refs: 0"
+    {
+      "name": "finding-000",
+      "status": "info",
+      "points": 0,
+      "detail": "Schemas scanned: 6"
+    },
+    {
+      "name": "finding-001",
+      "status": "info",
+      "points": 0,
+      "detail": "Invalid JSON schemas: 0"
+    },
+    {
+      "name": "finding-002",
+      "status": "info",
+      "points": 0,
+      "detail": "Non-draft-07 schemas: 0"
+    },
+    {
+      "name": "finding-003",
+      "status": "info",
+      "points": 0,
+      "detail": "$ref occurrences: 0"
+    },
+    {
+      "name": "finding-004",
+      "status": "info",
+      "points": 0,
+      "detail": "Broken internal $refs: 0"
+    }
   ],
   "exported_variables": {
     "schemas:count": 6,
