@@ -1,11 +1,21 @@
 # LSP Brains Specification
 
-**Version:** 2.1
+**Version:** 2.2
 **Date:** 2026-04-17
 **Status:** Active
 
 ### Changelog
 
+- **v2.2 (2026-04-17):** Sensor Testing Discipline. New §3.8 adds a SHOULD-level
+  requirement that each sensory tool ships with an automated test validating its
+  CMDB output against `cmdb-envelope-v1.schema.json`, asserting declared
+  `exported_variables` are present, and asserting scores fall in the documented
+  range for the tool's scoring model. MAY-level integration tests at the
+  ecosystem level are encouraged as regression guards. Additive only — no v2.1
+  sensor is retroactively non-conformant; the methodology strongly encourages
+  the feedback loop. See `METHODOLOGY-EVOLUTION.md` §8 for rationale (drift
+  between the Python SDK and the CMDB schema went unnoticed because no
+  automated signal watched for it).
 - **v2.1 (2026-04-17):** Hybrid MCP + A2A protocol split + Cultural Substrate. MCP scope
   narrowed to sensory tools (§3.7, Appendix F) and Brain-as-tool-to-LLM. A2A (Agent2Agent
   protocol) adopted as the normative transport for Brain-to-Brain peer communication.
@@ -298,6 +308,36 @@ When MCP is used for sensory discovery, the following rules apply:
 The MCP sensory protocol enables language-agnostic tool authoring: a Python script, Go
 binary, or remote HTTP service that implements the MCP server contract is a valid sensory
 tool. See [Appendix F](#appendix-f-mcp-integration) for the full MCP integration design.
+
+### 3.8 Testing Discipline
+
+Sensory tools are the ground truth a Brain reasons from. A sensor that silently fails —
+producing malformed output, wrong scores, or no output at all — is worse than a missing
+sensor: the Brain computes with garbage as though it were fact. Confidence decay (§4.4)
+eventually flags *stale* data; it cannot flag *malformed* data, because the Brain trusts
+whatever shape the sensor produced.
+
+Each conformant sensory tool SHOULD be accompanied by an automated test that asserts:
+
+1. The tool's output validates against
+   [`cmdb-envelope-v1.schema.json`](../schemas/cmdb-envelope-v1.schema.json).
+2. The domain-specific `exported_variables` keys declared by the tool are present in
+   the output.
+3. The score falls within the documented range for the tool's scoring model (e.g., binary
+   {0, 100}; graduated 0–100; `%` aggregate over per-check passing count).
+
+Where the tool is part of a fractal ecosystem (§9), an integration test MAY additionally
+be run at the parent Brain's level that exercises the tool against live project state
+(not a fixture) and asserts the current expected score. Such tests act as regression
+guards: a drop in score signals real drift in either the observed state or the observer.
+
+This requirement is SHOULD, not MUST, for two reasons. First, a sensor without a test is
+still conformant — confidence decay will surface quality issues eventually, just more
+slowly than a test would. Second, elevating this to MUST would invalidate every pre-v2.2
+sensor retroactively, which violates the additive-bumps-by-default discipline. The
+methodology nonetheless strongly encourages the feedback loop: the observing layer must
+itself be observable (VISION principle #18). See `METHODOLOGY-EVOLUTION.md` §8 for the
+discovery context.
 
 ---
 

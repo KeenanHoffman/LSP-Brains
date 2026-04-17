@@ -1,8 +1,81 @@
 # LSP Brains: Methodology Evolution Analysis
 
-**Date:** 2026-04-11 (original) — **Updated:** 2026-04-17 (hybrid MCP + A2A)
+**Date:** 2026-04-11 (original) — **Updated:** 2026-04-17 (sensor testing discipline)
 **Context:** Stage 5 complete (7/7 stories). Three deep audits synthesized.
 **Purpose:** Identify structural improvements to the underlying methodology.
+
+---
+
+## 8. Sensor Testing Discipline (2026-04-17)
+
+### Problem
+
+Round 2 of ecosystem sensors — `protocol-boundary`, `terminology-coherence`,
+`spec-impl-alignment` — shipped and scored 100 on all three. Post-hoc manual validation
+against `cmdb-envelope-v1.schema.json` surfaced drift: the Python SDK had been emitting
+findings as `list[str]` since inception, while both the canonical schema and the Rust
+`Finding` struct required objects with `{name, status, points, detail}`. The drift had
+been latent since the first Python sensor. Zero automated signal caught it.
+
+The Brain noticed nothing. The Rust side was correct. The schema was correct. The Python
+SDK quietly produced output that a strict `jsonschema.validate()` would have rejected —
+but no code path called `validate()`, so the drift was invisible.
+
+This is not a one-off. It is a structural blind spot: the observing layer was not itself
+observed. A sensor's output shape is load-bearing — the Brain reads it, correlates on
+it, decays confidence against it, and feeds it upward into parent Brains. A malformed
+sensor produces malformed scoring, and none of the downstream integrity checks
+(confidence decay in §4.4, correlation engine in §8, fractal aggregation in §9) can tell
+malformed data from legitimate data. They operate on whatever shape the sensor handed
+them.
+
+### The Insight
+
+Sensors are hypotheses about project state. A test that validates the sensor's own
+output is the cheapest possible evidence that the hypothesis has a well-formed answer.
+Without that test, a drift in the observer looks identical to a drift in the observed —
+both manifest as the score changing. Knowing which kind of drift is happening is load-
+bearing: one requires a code fix, the other requires an investigation.
+
+The testing layer is also fractal. Each sensor gets a unit-level test that asserts its
+output against the schema. The ecosystem gets an integration test that runs every sensor
+against live project state and asserts the current expected score. The unit tests catch
+shape drift; the integration tests catch behavioral drift. Both feedback loops cost very
+little relative to the cost of a Brain reasoning from garbage.
+
+### The Fix
+
+§3.8 "Testing Discipline" — a SHOULD-level requirement that every sensory tool ships
+with a test validating:
+
+1. Output conforms to `cmdb-envelope-v1.schema.json`.
+2. Declared `exported_variables` keys are present.
+3. Score is within the tool's documented scoring-model range.
+
+§9 ecosystem sensors MAY additionally have an ecosystem-level integration test exercising
+the sensor against live state — a regression guard for score drops.
+
+Additive by design. No pre-v2.2 sensor is retroactively non-conformant — the
+methodology nonetheless strongly encourages adoption. Elevating to MUST would violate
+the additive-bumps discipline and the spec never breaks v2.x conformance claims.
+
+Principle #18 "Sensors need sensors" encodes this as a first-class invariant. The
+methodology now explicitly recognizes that the observing layer needs its own observers,
+and that the cheapest place to catch a broken sensor is in a test that runs on every
+commit.
+
+### Discovery Context
+
+Drift surfaced during a post-ship validation pass while manually running
+`jsonschema.validate()` on the four live ecosystem CMDBs (spec §9 ecosystem
+`D:\Brains\.claude\`). All four failed with `'Status: identical' is not of type 'object'`
+— the SDK emitted the literal string `"Status: identical"` where the schema expected an
+object. Had an integration test existed, it would have caught this on the first sensor
+(`culture-coherence`, shipped weeks before) rather than on round 2.
+
+The fix landed alongside this METH-EV entry: Python SDK mapped to object findings, all
+four sensors regenerated their CMDBs (same scores, richer shape), and the ecosystem
+gained a `tests/` tree that runs `pytest` across every sensor on every change.
 
 ---
 
