@@ -3,6 +3,9 @@
 A language-agnostic specification for giving AI agents continuous project health awareness
 through sensory tools, scoring contracts, trajectory intelligence, and gated governance.
 
+**New here?** Read [INTRO.md](INTRO.md) first — a five-page, problem-first introduction
+to the pattern before the spec's normative detail.
+
 ## What is LSP Brains?
 
 LSP Brains defines a pattern — not a tool — for building an agent nervous system:
