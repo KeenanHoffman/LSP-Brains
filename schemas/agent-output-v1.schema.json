@@ -303,10 +303,10 @@
       "type": "string",
       "description": "Active hat name when -Hat parameter was provided."
     },
-    "current_persona": {
+    "current_human_persona": {
       "type": "string",
       "enum": ["executive", "manager", "developer", "specialist", "product-manager"],
-      "description": "Active persona when -Persona parameter was provided. Hat controls WHAT is emphasized; persona controls HOW MUCH detail is shown."
+      "description": "Active human-persona when --human-persona was provided. Hat controls WHAT is emphasized for the agent; human-persona controls HOW MUCH detail is shown to the human reader. Renamed from `current_persona` 2026-04-19."
     },
     "suggested_hat": {
       "type": "object",

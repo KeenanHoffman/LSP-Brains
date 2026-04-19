@@ -320,9 +320,9 @@
             }
           }
         },
-        "personas": {
+        "human_personas": {
           "type": "object",
-          "description": "Human user persona definitions for output filtering.",
+          "description": "Human user persona definitions for output filtering (executive, manager, developer, etc.). Renamed from `personas` 2026-04-19 to distinguish from the agent-hat concept.",
           "additionalProperties": {
             "type": "object",
             "required": ["description", "output_level"],
