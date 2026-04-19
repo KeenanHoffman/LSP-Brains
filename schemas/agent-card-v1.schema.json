@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/keenanHoffmanSparq/LSP-Brains/schemas/agent-card-v1.schema.json",
+  "$id": "https://github.com/KeenanHoffman/LSP-Brains/schemas/agent-card-v1.schema.json",
   "title": "Agent Card v1",
   "description": "Agent Card for an LSP Brain acting as an A2A peer. Published at /.well-known/agent-card.json. Declares identity, capabilities, transport, and authentication. Consumed by peer Brains (parent/child, local/external) to discover and invoke this Brain.",
   "type": "object",

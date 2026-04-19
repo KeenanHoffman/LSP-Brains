@@ -16,9 +16,9 @@ one input to the parent's own score. Spec §13 adds A2A as the
 RECOMMENDED transport for this, replacing the legacy subprocess-
 invocation fallback. The Rust workspace shipped both layers in Stage 6:
 
-- `motherbrain-a2a` crate — A2A server + client (envelopes, task
+- `neurogrim-a2a` crate — A2A server + client (envelopes, task
   lifecycle, agent cards)
-- `motherbrain-ecosystem` crate — `ChildEntry` / `ChildTransport::A2A` +
+- `neurogrim-ecosystem` crate — `ChildEntry` / `ChildTransport::A2A` +
   `invoke_child` + `score_ecosystem` for aggregation
 
 What was missing: **the wiring from the regular scoring pipeline to
@@ -30,7 +30,7 @@ anything that wasn't `"cmdb"`. The fractal pattern existed in code but
 couldn't be reached from configuration alone.
 
 Result: the ecosystem Brain at `D:\Brains\.claude\` declared two
-children (MotherBrain + LSP-Brains) but never consumed their scores.
+children (NeuroGrim + LSP-Brains) but never consumed their scores.
 Its unified score reflected only its own 6 domains from local CMDBs.
 The three-Brain topology was load-bearing in diagrams and
 documentation but had never actually composed.
@@ -50,9 +50,9 @@ to agree:
    `invoke_child` with a synthesized `ChildTransport::A2A`
 
 Session 3 landed all three. The test at
-`motherbrain-cli/tests/three_way_brain.rs` spawns two real subprocess
+`neurogrim-cli/tests/three_way_brain.rs` spawns two real subprocess
 peers, builds an ecosystem registry pointing at them via A2A endpoints,
-and runs `motherbrain score` — the full pipeline path a user would
+and runs `neurogrim score` — the full pipeline path a user would
 take. The score aggregates across all three sources (2 A2A peers + 1
 local CMDB) and exits 0. Fractal composition is finally composed.
 
@@ -62,11 +62,11 @@ Three lock-step additions, all additive:
 
 - `brain-registry-v2.schema.json` — `scoring_source.type` enum gains
   `"a2a"`; new `endpoint` + `interface_version` properties.
-- `motherbrain-core/src/registry.rs` — `ScoringSource` gains
+- `neurogrim-core/src/registry.rs` — `ScoringSource` gains
   `endpoint: Option<String>` + `interface_version: Option<String>`.
-- `motherbrain-cli/src/commands/context.rs::load_cmdb_data` — dispatch
+- `neurogrim-cli/src/commands/context.rs::load_cmdb_data` — dispatch
   on `source_type`; A2A branch builds a `ChildEntry` and calls
-  `motherbrain_ecosystem::invoke_child`; resulting AgentOutput.score
+  `neurogrim_ecosystem::invoke_child`; resulting AgentOutput.score
   becomes the domain's raw score.
 
 Failure semantics: unreachable peer / bad URL / version mismatch →
@@ -206,7 +206,7 @@ honesty, critical-but-kind, respect — declared in a small, versioned manifest.
 **Key design choices:**
 
 - **Three identical peer-local copies** — each participating agent (ecosystem Brain,
-  MotherBrain, LSP-Brains) carries its own `culture.yaml`. No inheritance by reference.
+  NeuroGrim, LSP-Brains) carries its own `culture.yaml`. No inheritance by reference.
   Rationale: agents are peers; no agent should depend on another to resolve its basic
   operating invariants. Drift becomes a visible health signal rather than a mechanical
   concern.
@@ -259,7 +259,7 @@ compound each other's blind spots.
 
 ### Implementation
 
-Tracked in the MotherBrain roadmap as:
+Tracked in the NeuroGrim roadmap as:
 - **S5-TP-9** (Cultural Substrate) — manifest, spec §14, principle #17, schema,
   rubber-duck skill. Adopter-facing methodology addition.
 - **S6-DB-7** (Ecosystem Brain) adds `culture-coherence` domain that watches for drift
@@ -284,7 +284,7 @@ message routing — the exact concerns the Agent2Agent (A2A) protocol already so
 
 ### The Insight
 
-MotherBrain has two distinct protocol shapes inside it:
+NeuroGrim has two distinct protocol shapes inside it:
 - **Tool-call shape** — sensory tools → Brain, Brain → LLM agent. MCP is the right fit. Keep.
 - **Peer-agent shape** — parent Brain ↔ child Brain (Stage 4), local Brain ↔ external Brain
   (Stage 6). MCP is the wrong fit. Adopt A2A.
@@ -296,7 +296,7 @@ integration — the migration surface is smaller than it looks.
 ### The Decision
 
 **MCP stays** as the normative protocol for sensory tool invocation (spec §3.7 + Appendix F)
-and for Brain-as-tool exposure to LLM agents (Claude Code, Cursor, etc.). The `motherbrain-mcp`
+and for Brain-as-tool exposure to LLM agents (Claude Code, Cursor, etc.). The `neurogrim-mcp`
 crate and the Python SDK `run_server()` helper remain unchanged.
 
 **A2A is adopted** as the normative protocol for Brain-to-Brain peer communication:
@@ -318,7 +318,7 @@ crate and the Python SDK `run_server()` helper remain unchanged.
 - **New §13 "A2A Peer Protocol"** — canonical normative rules.
 - **New Appendix G "A2A Integration"** — mirror of Appendix F for peers.
 - Appendix E (Glossary): add A2A, Agent Card, Peer Brain, Task (A2A), A2A Message.
-- Appendix D: add rows for `motherbrain-a2a` crate.
+- Appendix D: add rows for `neurogrim-a2a` crate.
 
 ### New Schemas
 
@@ -349,9 +349,9 @@ transport-agnostic). v2.1 is an additive refinement; v3.0 is deferred until A2A 
 
 ### Implementation
 
-Tracked in MotherBrain roadmap as:
+Tracked in NeuroGrim roadmap as:
 - S5-TP-8 (spec + schemas publication)
-- S6-DB-1 through S6-DB-6 (motherbrain-a2a crate, ecosystem refactor, A2A server,
+- S6-DB-1 through S6-DB-6 (neurogrim-a2a crate, ecosystem refactor, A2A server,
   dual-brain pair integration, reference deployment, optional Python SDK helper)
 
 Stage 6 rescoped as "Dual Brain via A2A." Keep-subprocess decision rationale: starter-kit

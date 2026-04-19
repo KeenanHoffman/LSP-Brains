@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/keenanHoffmanSparq/LSP-Brains/schemas/culture-manifest-v1.schema.json",
+  "$id": "https://github.com/KeenanHoffman/LSP-Brains/schemas/culture-manifest-v1.schema.json",
   "title": "Culture Manifest v1",
   "description": "Declarative cultural substrate for LSP Brains agents. Declares the values that govern how agents communicate — agent↔agent and agent↔human. Distributed as identical copies across all participating agents (peer-local, not inherited). Culture invariants are analogous to safety invariants (spec §5.5): they can only tighten, never loosen. A human preference (human-comms) can slide style within culture's floor; it cannot cross it.",
   "type": "object",

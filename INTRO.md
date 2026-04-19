@@ -208,11 +208,12 @@ in the reference implementation's `sdk-python/` directory has examples.
 
 ## A note on the name
 
-This document refers to the reference implementation by its stylized
-form, "Moth(er):Br+AI+n," but the plain-text name is currently under
-trademark review. The public name may differ from drafts in this
-repository. The methodology — "LSP Brains" — is the stable, long-term
-name. The implementation's name is contingent.
+The reference implementation is called **NeuroGrim** — tagline *"a
+book of spells for AI agents."* An earlier name was set aside in
+trademark review; the project was rebranded to NeuroGrim on
+2026-04-19. The methodology name — "LSP Brains" — is stable and
+belongs to this spec. The implementation's name is separate and
+carries no authority over the methodology.
 
 ## A note on confidence
 

@@ -74,7 +74,7 @@ LSP Brains is a language-agnostic specification for building **agent nervous sys
 software components that observe a project's state, score its health across multiple
 domains, detect cross-domain patterns, and recommend actions with calibrated autonomy.
 
-**Moth(er):Br+AI+n** is the reference implementation of this specification, written in
+**NeuroGrim** is the reference implementation of this specification, written in
 Rust. The specification defines WHAT a conformant Brain must do. The implementation
 shows HOW one Brain does it. Any implementation in any language that follows this
 specification is equally valid.
@@ -1485,7 +1485,7 @@ decides whether drift is intentional (e.g., a subproject has genuinely extended 
 with a project-local value) or accidental (e.g., a partial propagation after an edit).
 
 See reference-implementation story **S6-DB-7** (Ecosystem Brain at Session Root) in the
-Moth(er):Br+AI+n roadmap.
+NeuroGrim roadmap.
 
 ### 14.7 First Concrete User: Rubber-Duck Skill
 
@@ -1686,7 +1686,7 @@ mapping is language-agnostic — implementations choose their own file structure
 | **Incident pattern** | A cross-domain signal with recurrence tracking and severity escalation. |
 | **LSP Brains** | The language-agnostic specification for agent nervous systems (this document). |
 | **MCP** | Model Context Protocol. JSON-RPC based protocol for tool discovery and invocation between clients and servers. In LSP Brains, MCP is used for (1) sensory tool discovery (Brain-as-MCP-client, §3.7), (2) Brain exposure to LLM agents (Brain-as-MCP-server, Appendix F). MCP is NOT used for Brain-to-Brain peer communication — see A2A (§13, Appendix G). |
-| **Moth(er):Br+AI+n** | The reference implementation of LSP Brains, written in Rust. |
+| **NeuroGrim** | The reference implementation of LSP Brains, written in Rust. |
 | **Output modes** | The Brain's display modes (agent, score, health, trend, validate, propose, plan — §6.6, §11.1). Each targets a different consumer: JSON for machines, terse lines for humans, detailed reports for operators. |
 | **Peer Brain** | Another Brain with which this Brain communicates via A2A. In fractal composition (§9): parent/child. In dual brain (§10): local/external. |
 | **Persona** | A human user role that controls output verbosity and field filtering. |
@@ -1752,7 +1752,7 @@ The Brain discovers sensory tools via the `config.sensory_servers` registry sect
   "config": {
     "sensory_servers": {
       "git-health": {
-        "command": "motherbrain sensory git-health",
+        "command": "neurogrim sensory git-health",
         "args": ["--project-root", "."],
         "transport": "stdio"
       },

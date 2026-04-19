@@ -13,7 +13,7 @@ This document expands LSP Brains Specification Section 10 into a detailed, imple
 design for the dual brain architecture. A developer reading only this document and the
 spec MUST be able to build an external brain that cooperates with the existing local brain.
 
-**Design constraint:** The local brain (Moth(er):Br+AI+n) MUST NOT require code changes
+**Design constraint:** The local brain (NeuroGrim) MUST NOT require code changes
 to support the dual brain architecture. All new behavior is additive — new files, new
 triggers, new event routing — never modifications to existing scoring or governance logic.
 
@@ -79,7 +79,7 @@ instances that share state files and communicate via a lightweight event protoco
 ## 2. Local Brain Responsibilities
 
 The local brain runs on the developer's machine. It is the v1 product
-(Moth(er):Br+AI+n as currently implemented).
+(NeuroGrim as currently implemented).
 
 ### 2.1 Performance Envelope
 

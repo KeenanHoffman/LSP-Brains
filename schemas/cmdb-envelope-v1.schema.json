@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/keenanHoffmanSparq/LSP-Brains/schemas/cmdb-envelope-v1.schema.json",
+  "$id": "https://github.com/KeenanHoffman/LSP-Brains/schemas/cmdb-envelope-v1.schema.json",
   "title": "CMDB Meta Envelope v1",
   "description": "Every CMDB file written by a sensory tool MUST include this envelope. The meta block enables the Brain to detect schema versions, compute confidence from age, and identify the producing tool.",
   "type": "object",

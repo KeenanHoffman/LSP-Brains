@@ -1,7 +1,7 @@
 # LSP-Brains — Agent Guide
 
 LSP-Brains is the **specification** for building agent nervous systems. It is the
-methodology; `Moth-er-Br-AI-n` is the reference implementation. This repo has its own
+methodology; `NeuroGrim` is the reference implementation. This repo has its own
 Brain that scores **specification quality** — the first Brain in the ecosystem that
 scores a methodology rather than a codebase. Ideas as code.
 
@@ -64,7 +64,7 @@ schema editing, and the Brain is more advisory than operational.
 
 The file `.claude/culture.yaml` is this repo's copy of the ecosystem-wide cultural
 substrate (spec §14). It is byte-identical to the copies at `D:\Brains\.claude\` and
-`D:\Brains\Moth-er-Br-AI-n\.claude\`. Agents working in this repo
+`D:\Brains\NeuroGrim\.claude\`. Agents working in this repo
 honor the five values — positivity, integrity, honesty, critical-but-kind, respect —
 as invariants that apply after hats, personas, and human-comms.
 
@@ -75,7 +75,7 @@ domain.
 
 This repo is one of two children of the ecosystem Brain at `D:\Brains\.claude\`. The
 ecosystem Brain will (eventually) query this Brain via A2A (spec §13 + Appendix G) when
-the A2A server crate (`motherbrain-a2a`, Stage 6) ships. For now, this Brain is stand-
+the A2A server crate (`neurogrim-a2a`, Stage 6) ships. For now, this Brain is stand-
 alone and observable via direct file reads.
 
 ## Spec Edits Workflow

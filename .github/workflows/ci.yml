@@ -19,14 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # The sensors import `lsp_brains` from the sibling MotherBrain repo
+      # The sensors import `lsp_brains` from the sibling NeuroGrim repo
       # (ecosystem monorepo layout). Clone the sibling adjacent so the
       # try/except SDK shim resolves via the fallback path. Once `lsp_brains`
       # is on PyPI (S6-DB-6+ follow-on), this step can be replaced with a
       # plain `pip install lsp-brains`.
-      - name: clone MotherBrain sibling
+      - name: clone NeuroGrim sibling
         run: |
-          git clone --depth 1 https://github.com/KeenanHoffman/Moth-er-Br-AI-n.git ../Moth-er-Br-AI-n
+          git clone --depth 1 https://github.com/KeenanHoffman/NeuroGrim.git ../NeuroGrim
 
       - uses: actions/setup-python@v5
         with:
@@ -37,7 +37,7 @@ jobs:
           python -m pip install --upgrade pip
           # Install the SDK from the sibling checkout so `from lsp_brains import ...`
           # resolves via the preferred (installed) branch of the shim.
-          python -m pip install -e "../Moth-er-Br-AI-n/sdk-python[dev]"
+          python -m pip install -e "../NeuroGrim/sdk-python[dev]"
           python -m pip install -r tests/requirements-dev.txt
 
       - name: pytest

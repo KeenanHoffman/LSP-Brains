@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/keenanHoffmanSparq/LSP-Brains/schemas/a2a-envelope-v1.schema.json",
+  "$id": "https://github.com/KeenanHoffman/LSP-Brains/schemas/a2a-envelope-v1.schema.json",
   "title": "A2A Message Envelope v1",
   "description": "Envelope format for Brain-to-Brain A2A (Agent2Agent) messages. Wraps the 10 dual-brain event types defined in LSP-BRAINS-SPEC.md Section 10.4. Used for fractal composition (parent/child) and dual brain (local/external) coordination. Not used for sensory tool invocation — see MCP sensory contract (cmdb-envelope-v1).",
   "type": "object",

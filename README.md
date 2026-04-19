@@ -44,14 +44,14 @@ adoption-guide/
 
 | Implementation | Language | Repository |
 |---------------|----------|------------|
-| Moth(er):Br+AI+n | Rust | [KeenanHoffman/Moth-er-Br-AI-n](https://github.com/KeenanHoffman/Moth-er-Br-AI-n) |
+| NeuroGrim | Rust | [KeenanHoffman/NeuroGrim](https://github.com/KeenanHoffman/NeuroGrim) |
 
 ## Ecosystem Context
 
 This repo is one of three in the [Brains-ecosystem](https://github.com/KeenanHoffman/Brains-ecosystem):
 
 - **LSP-Brains** (this repo) — the methodology (spec + schemas + sensory tools scoring the spec itself)
-- **Moth-er-Br-AI-n** — the Rust reference implementation
+- **NeuroGrim** — the Rust reference implementation
 - **Brains-ecosystem** — coordination layer (ecosystem Brain that measures spec↔impl alignment, culture coherence, etc.)
 
 To clone the whole ecosystem at once: `git clone --recursive git@github.com:KeenanHoffman/Brains-ecosystem.git`.
@@ -61,14 +61,14 @@ To clone just this spec (no impl, no ecosystem Brain): `git clone git@github.com
 
 The 7 Python sensory tools under `sensory/` (spec-completeness, schema-validity, link-integrity,
 glossary-freshness, diagram-sync, rfc-2119-compliance, changelog-hygiene) currently depend on the
-`lsp_brains` Python package shipped in `Moth-er-Br-AI-n/sdk-python/`. They import via a
+`lsp_brains` Python package shipped in `NeuroGrim/sdk-python/`. They import via a
 hardcoded `sys.path` shim assuming the monorepo layout (sibling directories under `D:\Brains\`).
 
 If you cloned this repo standalone (without the ecosystem), the tools won't import. Two options:
 
 1. **Recommended — clone the full ecosystem** via `--recursive` on `Brains-ecosystem`. The tools
    then find the SDK at their expected sibling path.
-2. **Install the SDK from source** — `pip install -e <path-to>/Moth-er-Br-AI-n/sdk-python/` and then
+2. **Install the SDK from source** — `pip install -e <path-to>/NeuroGrim/sdk-python/` and then
    edit the `_SDK_PATH` shim at the top of each `sensory/check_*.py` to be a no-op (remove the
    `sys.path.insert`). PyPI publication of the SDK is not yet in place.
 

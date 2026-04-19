@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/keenanHoffmanSparq/LSP-Brains/schemas/brain-registry-v2.schema.json",
+  "$id": "https://github.com/KeenanHoffman/LSP-Brains/schemas/brain-registry-v2.schema.json",
   "title": "Brain Registry v2",
   "description": "Central configuration file for an LSP Brain. Source truth: hand-maintained, committed to version control. Defines domains, scoring, governance, and intelligence configuration.",
   "type": "object",

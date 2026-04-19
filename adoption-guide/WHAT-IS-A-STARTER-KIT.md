@@ -44,7 +44,7 @@ A starter kit can be built in any language. The contracts are:
 - **The Brain** produces JSON conforming to `agent-output-v1.schema.json`
 - **Configuration** follows `brain-registry-v2.schema.json`
 
-The reference implementation (Moth(er):Br+AI+n) is written in Rust. Sensory tools can be
+The reference implementation (NeuroGrim) is written in Rust. Sensory tools can be
 written in any language — they communicate with the Brain via MCP (Model Context Protocol).
 
 ## MCP Sensory Model
