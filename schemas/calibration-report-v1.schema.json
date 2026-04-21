@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/KeenanHoffman/LSP-Brains/schemas/calibration-report-v1.schema.json",
+  "title": "Agent Behavior Calibration Report v1",
+  "description": "The drift report produced by `abv-run calibrate`. Records how each scenario's gold samples scored against the live judge vs their human-assigned labels. Consumed by the `agent-behavior` domain's trust gate (spec §15.3): drift > threshold on any gold sample refuses to emit a trustworthy CMDB.\n\nCalibration is cheap relative to a full run (one judge call per gold sample, no trials, no feedback), so operators SHOULD run it on every stack change (model rotation, judge-prompt edit, scenario-rubric edit). The `judge_calibration` block in `agent-behavior-result-v1.schema.json` carries the SAME shape under the `scenarios[].calibration` path — this schema exists as a standalone contract for the calibrate-only output.",
+  "type": "object",
+  "required": ["run_id", "schema_version", "started_at", "finished_at", "threshold", "overall_status", "scenarios"],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "description": "Unique id for this calibration run (UUID v4). Propagates into the per-trial records if a regular run is immediately subsequent."
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "1",
+      "description": "Calibration report schema version."
+    },
+    "harness_version": {
+      "type": "string",
+      "description": "Semver of the `abv-run` harness that produced this report."
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "threshold": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 50,
+      "description": "Maximum |judge_score - human_score| allowed for a gold sample to count as 'calibrated.' Default 10 (matches spec §15.3's guidance). Operators MAY tighten for trust-critical domains; loosening past 20 invalidates the interpretation contract."
+    },
+    "overall_status": {
+      "type": "string",
+      "enum": ["pass", "drift-warning", "drift-blocker"],
+      "description": "Aggregate verdict. `pass` = every gold sample within threshold. `drift-warning` = any sample drifted > threshold but ≤ 2×threshold. `drift-blocker` = any sample drifted > 2×threshold OR systematic bias (every sample off in the same direction)."
+    },
+    "max_drift": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Maximum |judge_score - human_score| observed across every gold sample. The headline number for drift telemetry."
+    },
+    "systematic_bias": {
+      "type": "integer",
+      "description": "Signed mean drift (judge - human) across every gold sample. A large absolute value with consistent sign (e.g., +15 across 10 samples) indicates the judge is uniformly generous or uniformly harsh — different signal than noisy per-sample drift."
+    },
+    "scenarios": {
+      "type": "array",
+      "description": "Per-scenario drift detail. Order follows scenario-dir loading order.",
+      "items": {
+        "type": "object",
+        "required": ["scenario_id", "scenario_version", "gold_samples", "max_drift", "status"],
+        "properties": {
+          "scenario_id": { "type": "string" },
+          "scenario_version": { "type": "string" },
+          "gold_samples": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["label", "human_score", "judge_score", "drift", "status"],
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "enum": ["gold-good", "gold-bad", "gold-edge"]
+                },
+                "human_score": { "type": "integer", "minimum": 0, "maximum": 100 },
+                "judge_score": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "What the judge returned when scoring this gold sample's response against the scenario's rubric."
+                },
+                "drift": {
+                  "type": "integer",
+                  "description": "Signed: judge_score - human_score. A +15 means the judge was 15 points more generous than the human."
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["pass", "drift-warning", "drift-blocker"],
+                  "description": "Per-sample verdict under this report's threshold."
+                },
+                "judge_findings": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "The judge's findings tags for this gold sample. Useful when triaging drift — systematic `missed_X` findings on a gold-good sample point at judge bias, not rubric ambiguity."
+                },
+                "judge_explanation": {
+                  "type": "string",
+                  "description": "Judge's prose explanation for this gold sample's score."
+                },
+                "error": {
+                  "type": "string",
+                  "description": "Non-null iff the calibration call failed (API error, JSON parse error). Blocks the status to drift-blocker for this sample."
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "max_drift": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Maximum |drift| across this scenario's gold samples."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "drift-warning", "drift-blocker", "error"]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "token_budget": {
+      "type": "object",
+      "properties": {
+        "input_tokens": { "type": "integer", "minimum": 0 },
+        "output_tokens": { "type": "integer", "minimum": 0 },
+        "judge_calls": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional operator notes about this calibration run."
+    }
+  },
+  "additionalProperties": false
+}
