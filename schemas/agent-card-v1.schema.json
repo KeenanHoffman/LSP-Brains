@@ -102,13 +102,13 @@
     },
     "authentication": {
       "type": "object",
-      "description": "Auth scheme for this peer. v2.1 of the spec only supports 'none' (dev/trusted-network). Future versions will add bearer tokens and mutual TLS.",
+      "description": "Auth scheme for this peer. 'none' is the zero-trust-network default. 'bearer' enables per-client scope tokens (required for multi-tenant and remote-agent topologies). Mutual TLS remains a future addition.",
       "properties": {
         "scheme": {
           "type": "string",
-          "enum": ["none"],
+          "enum": ["none", "bearer"],
           "default": "none",
-          "description": "v2.1: only 'none' is supported. Adopters requiring auth MUST gate access at the network layer until a future spec version adds bearer/mtls."
+          "description": "'none' — no auth (use only on trusted networks or behind a firewall). 'bearer' — the client MUST send 'Authorization: Bearer <token>' on every task request. Token issuance and validation are implementation-defined; reference implementation uses hashed storage with constant-time comparison and per-token rate-limit profiles."
         }
       },
       "additionalProperties": false

@@ -1,8 +1,84 @@
 # LSP Brains: Methodology Evolution Analysis
 
-**Date:** 2026-04-11 (original) — **Updated:** 2026-04-17 (A2A-pull fractal composition)
+**Date:** 2026-04-11 (original) — **Updated:** 2026-04-20 (A2A bearer auth for remote-agent topologies)
 **Context:** Stage 5 complete (7/7 stories). Three deep audits synthesized.
 **Purpose:** Identify structural improvements to the underlying methodology.
+
+---
+
+## 10. A2A Bearer Authentication (2026-04-20)
+
+### Problem
+
+v2.1 of the spec fixes `authentication.scheme` to `"none"` and says:
+"Adopters requiring auth MUST gate access at the network layer."
+This is adequate for single-host dev topologies (containers on a
+loopback-only Docker network, trusted team machines), but it
+forecloses remote-agent patterns that the methodology otherwise
+supports at the protocol level.
+
+The "CEO scenario" — an operator whose only local artifact is a
+`brain-registry.json` pointing at hosted agents, with credentials
+for access — requires per-client credentials. Network-layer auth
+(firewall, VPN) is too coarse: it gates *anyone with network
+access*, not *this specific client*. The protocol needs a
+fine-grained credential the hosted agents can issue, validate,
+audit, and revoke without operator cooperation from the clients.
+
+### Addition
+
+`authentication.scheme` enum extended to `["none", "bearer"]`
+(additive; existing `none` consumers are unaffected). When `scheme:
+bearer` is advertised:
+
+- The client MUST send `Authorization: Bearer <token>` on every
+  task request. Agent Card discovery remains unauthenticated —
+  peers must be able to learn of each other's existence before
+  they can authenticate.
+- Token issuance and validation are implementation-defined. The
+  reference implementation (NeuroGrim) uses hashed storage in a
+  local SQLite database with constant-time hash comparison,
+  per-token rate-limit profiles, revocation, and optional
+  expiration. Tokens are never stored in plaintext on disk.
+- Response shapes for auth failure: `401` with a machine-readable
+  `detail` (missing / invalid / revoked / expired). Implementations
+  MUST audit-log the rejection without recording the presented token.
+
+### Rationale
+
+- **Enables remote-agent topologies without weakening the default.**
+  Trusted-network deployments stay on `none`; multi-tenant /
+  hosted deployments opt into `bearer`. The choice is per-peer.
+- **Additive, not breaking.** An old client that doesn't send an
+  `Authorization` header can still talk to a `scheme: none` peer,
+  and old peers that ignore `Authorization` still work against a
+  bearer-sending client.
+- **Bearer is the minimum useful auth primitive.** mTLS is stronger
+  but requires certificate infrastructure most adopters don't have.
+  OAuth requires an auth provider. Bearer is the lingua franca that
+  fits between "no auth" and "enterprise PKI."
+- **Enables the kill switch.** With per-token credentials, an
+  operator can revoke one client's access without touching any other
+  client's. This is the minimum capability required for responsible
+  multi-client hosting.
+
+### Implementation notes
+
+- Reference impl ships a `token_store` module with issue / validate
+  / revoke / list / expire semantics; token CLI follows the
+  `proxy-cli` pattern (issue prints the raw token exactly once,
+  store records only the hash).
+- Rate-limit profile is associated with each token at issuance;
+  the validator returns the profile so the caller can enforce
+  quotas.
+- Audit log records the token's label + token_id prefix (first 8
+  hex chars of hash), never the raw token.
+- The `/.well-known/agent-card.json` endpoint stays unauthenticated
+  by design; it is the contract surface peers use to discover each
+  other's auth requirements.
+
+Deferred: mTLS, OAuth, per-model / per-endpoint scope restrictions.
+All additive; none block this change.
 
 ---
 
