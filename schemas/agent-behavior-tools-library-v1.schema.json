@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/KeenanHoffman/LSP-Brains/schemas/agent-behavior-tools-library-v1.schema.json",
+  "title": "Agent Behavior Tools Library v1",
+  "description": "Schema for the shared library of tool definitions that agent-behavior scenarios can reference by name. Consumed by execution-based rubrics (spec §15, S8-ABV-EXT-3). Each entry maps to an Anthropic API tool-schema passed in the `tools` field of `/v1/messages`. When a scenario declares `tools: [Grep, Read, Glob]`, the harness resolves each name to an entry in the library YAML before dispatching the agent call. Keeping the library shared means scenarios don't re-declare tool schemas and updates (e.g., adding a new parameter to Grep) happen in one place.",
+  "type": "object",
+  "required": ["schema_version", "tools"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional human-readable description of this library."
+    },
+    "tools": {
+      "type": "object",
+      "description": "Map from tool name (as referenced by scenarios) to tool schema. Tool names are the exact strings scenarios put in their `tools: [...]` list.",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["description", "input_schema"],
+        "properties": {
+          "description": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Human-readable tool description as Anthropic's API expects it. Used by the model to decide when to call the tool."
+          },
+          "input_schema": {
+            "type": "object",
+            "description": "JSON Schema describing the tool's input arguments. Passed verbatim to the Anthropic API as the tool's `input_schema`. Shape matches Anthropic's tool-use contract."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional notes about the tool — e.g., why the schema looks the way it does, known quirks."
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

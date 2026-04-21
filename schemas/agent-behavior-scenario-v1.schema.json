@@ -97,6 +97,13 @@
       "items": { "type": "string", "minLength": 1 },
       "description": "List of Anthropic model ids used as consensus judges (spec §15.3 multi-judge consensus — S8-ABV-EXT-2). Per-trial, each listed model judges the response independently; per-criterion scores are aggregated via median, and the variance is recorded. Use an odd count (3, 5) to avoid ties; N=2 averages the pair. Token cost scales ~N× the single-judge baseline, so default to sandbox profile for multi-judge trial runs. Mutually exclusive with `judge_model`; when both are present, `judge_models` wins."
     },
+    "tools": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Optional list of tool names (execution-based rubrics — S8-ABV-EXT-3). When present, the harness resolves each name to a schema in the shared tools library (default: `D:/Brains/.claude/agent-behavior-tools.yaml`) and passes those schemas to Anthropic's `/v1/messages` API via the `tools` parameter. The agent-under-test then emits `tool_use` content blocks; the harness appends a structured summary of the calls to the text the judge scores. Rubric criteria can reference actual tool behavior ('agent called Grep with a specific pattern') rather than stated intent ('agent said it would use Grep'). V1 tools: Grep, Read, Glob."
+    },
     "agent_model": {
       "type": "string",
       "description": "Optional override for the model backing the agent-under-test. When omitted, harness default (from claude-proxy config) is used."
