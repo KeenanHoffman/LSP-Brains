@@ -1,8 +1,60 @@
 # LSP Brains: Methodology Evolution Analysis
 
-**Date:** 2026-04-11 (original) — **Updated:** 2026-04-20 (A2A bearer auth for remote-agent topologies)
-**Context:** Stage 5 complete (7/7 stories). Three deep audits synthesized.
+**Date:** 2026-04-11 (original) — **Updated:** 2026-04-21 (Agent Behavior Verification)
+**Context:** Stage 5 complete (7/7 stories). Stage 6 complete (dual brain + bearer + CEO topology). Stage 7 begins with a methodology-level addition: measuring agent behavior.
 **Purpose:** Identify structural improvements to the underlying methodology.
+
+---
+
+## 11. Agent Behavior Verification (2026-04-21)
+
+### Problem
+
+Sections 1–14 of the spec describe how a Brain measures the state of a **project**. Nothing in the spec measures the state of the **agents operating on that project**. Skills describe how an agent should behave; hats describe how it should attend; culture describes what it should never violate — but all three are declarations without verification. §14.8 acknowledged this gap for culture specifically ("declaration without measurement is a weakness; the manifest can become aspirational if outputs drift"). The problem is not culture-specific: every skill, every hat, every cross-cutting expectation about agent behavior has the same risk.
+
+Autonomy resolution (§5.5) uses proposal-effectiveness from outcomes — "85% of proposals worked → auto." That's a lag signal after actions took effect. It says nothing about whether the reasoning was sound, whether LSP tools were used when they should have been, whether cultural invariants held under a tempting prompt, whether the right hat was worn. A proposal that worked by accident scores the same as a proposal that was soundly reasoned; a rubric-violating agent whose recommendation happened to land scores full marks.
+
+There is no operational answer to "is this agent fit for this project's verification gating?" Which matters, because the VISION principles explicitly position culture, hats, and skills as load-bearing. If an agent is silently drifting away from them, the Brain is measuring the wrong thing — the project looks healthy while the measurement surface is degrading.
+
+### The Insight
+
+Agents have behavior. That behavior is measurable. **Non-deterministic verification of non-deterministic behavior** is messier than deterministic tests, but the mess is load-bearing: it forces us to treat scores distributionally, to calibrate the judge against human-labeled gold samples, and to treat single-trial numbers as uninterpretable. Those constraints are features, not bugs — they keep anyone from mistaking a noisy number for a clean one.
+
+The mechanism is: a **scenario** (user-impersonation prompt + rubric + trial count) → multiple **trials** (agent responses) → a **judge** (a second LLM scoring each response against the rubric) → a **feedback elicitation** (the agent-under-test is told its score and invited to suggest how the skill / test could have been clearer) → a **ledger** of feedback the human reviewer uses to refine skills. The agent cannot edit the skills it is graded against; that bright line prevents drift into self-training.
+
+This is VISION principle #19 ("agents are sensed") made operational. It sits beside #18 ("sensors need sensors") as the second half of a single observability story: the observer needs an observer, AND the agents running the observers must themselves be scorable.
+
+### The Fix
+
+New spec chapter §15 "Agent Behavior Verification" formalizes the contract:
+
+- **§15.2 Scenario + Rubric** specifies the authoring shape. `agent-behavior-scenario-v1.schema.json` is the normative schema. A scenario declares an id + version + target + prompt + rubric + trial count + gold samples.
+- **§15.3 Judge Protocol** specifies the judge's inputs, outputs, and — importantly — calibration. Before trial results are admitted to the CMDB, the judge MUST score that scenario's gold samples and SHALL refuse to emit results if drift exceeds the configured threshold. This is the operational guard against silent judge degradation.
+- **§15.4 Distributional Interpretation** is deliberate: a scenario's single-trial score is never authoritative. Mean score + stddev + majority-pass constitute the result; implementations MUST surface all three.
+- **§15.5 Feedback Loop** specifies the human-in-the-loop refinement workflow. Critically: agent-under-test feedback is text only. Humans read the ledger, group by target, and refine skills by hand. Delta tracking verifies refinements moved scores in the right direction. Gold samples are FROZEN — they are the baseline against which skills are refined, not the other way around.
+- **§15.6 Interaction** spells out how `agent-behavior` composes with §5 governance (participates in gates but only after calibration audit; MAY tighten autonomy as an invariant but MUST NOT loosen it), §12 learning (proposals emitted for regressions), and §14 culture (the five values are direct rubric targets).
+- **§15.7 Privacy + Cost** requires the harness to allowlist audit-log fields (no prompt content on disk), track token budgets, and enforce cost ceilings. Matches the hygiene already established in the reference implementation's claude-proxy and webhook-sync services.
+
+### Rationale
+
+- **Generalizes §14.8's drift-sensor promise** — we promised a culture drift check; we deliver a scenario-driven verification mechanism where `culture-invariants` is one of five first-party scenarios (`lsp-code-optimality`, `lsp-brain-usage`, `hat-discipline`, `culture-invariants`, `honest-scoring`).
+- **Separates process quality from outcome quality.** §12 Learning Protocol measures outcomes (did the proposal work?). §15 measures process (did the agent reason soundly, use the right tools, honor the culture?). Both are real; both are necessary; they compose.
+- **Advisory by default.** A new domain type where scores come from LLM-as-judge is not trustworthy enough on day one to carry a gating weight. v1 implementations SHOULD keep the weight at 0.0 until a documented judge-calibration audit passes. Conservative ≠ slow — it's what makes the eventual gating trustworthy.
+- **Human-in-the-loop refinement preserves accountability.** The safety rail (agent cannot edit skills) is deliberate. Combined with frozen gold samples, it forces refinements to either improve the score or fail honestly — there is no escape hatch where the agent trains itself into an easier rubric.
+- **Dog-food value.** The reference implementation ships five scenarios targeting skills the ecosystem already ships. The first run will find real issues in real skills. Every issue surfaced is a skill improvement that compounds across every future project adopting the ecosystem.
+
+### Implementation notes
+
+Reference implementation lives at `D:/Brains/agent-behavior-runner/` — a Python CLI (`abv-run`) that reuses claude-proxy tokens + audit discipline. The CMDB shape extends `cmdb-envelope-v1.schema.json` via `additionalProperties`; no breaking change to the envelope schema. The feedback ledger follows the existing append-only JSONL pattern (`incident-ledger`, `proposal-ledger`, `score-history`). Integration with NeuroGrim happens through a new CLI subcommand (`neurogrim cast agent-behavior`) that shells out to `abv-run` and pipes the result CMDB into the standard domain-scoring path. No Rust scoring-engine changes required.
+
+### Deferred
+
+- **Multi-judge consensus.** v1 ships single-judge scoring. §15.3 names multi-judge as the stretch for scenarios where historical rubric variance is high.
+- **Cross-model judges.** Same model family for agent and judge in v1. Using a different model family for the judge (e.g., Claude agent + GPT judge) reduces blind-spot overlap at cost.
+- **Execution-based rubrics.** v1 grades stated intent (did the agent plan to use Grep?). Execution-based grading (did the agent *actually* call Grep in the resulting work?) is phase-2.
+- **Per-project rubric overrides.** "Good agent" varies by project; v1 ships one ecosystem-wide rubric set.
+- **CI integration.** v1 cadence is on-demand + documented weekly. Continuous runs on every PR are gated on cost-budget tooling maturity.
+- **Gating.** Advisory-only in v1 with the path to weighted-gating left open. Promoting past advisory requires passing the judge-calibration audit defined in §15.3.
 
 ---
 

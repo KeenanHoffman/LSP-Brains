@@ -1,0 +1,151 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/KeenanHoffman/LSP-Brains/schemas/agent-behavior-result-v1.schema.json",
+  "title": "Agent Behavior Result v1",
+  "description": "The per-run result record emitted by the `abv-run` harness. One file per harness invocation, aggregating every scenario × every trial. Written alongside the agent-behavior CMDB (which rolls these up into scores). See spec §15.4.",
+  "type": "object",
+  "required": ["run_id", "started_at", "finished_at", "scenarios"],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "description": "Unique id for this harness invocation (UUID v4 or similar). Propagates into the feedback ledger so individual feedbacks can be tied back to the run."
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "1",
+      "description": "Result schema version."
+    },
+    "harness_version": {
+      "type": "string",
+      "description": "Semver of the `abv-run` harness that produced this result. Useful for explaining score shifts caused by harness logic changes."
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp when the harness started."
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp when the harness completed (success or abort)."
+    },
+    "profile": {
+      "type": "string",
+      "enum": ["sandbox", "full"],
+      "description": "Cost profile used for this run. 'sandbox' = cheap models, small token budgets (CI-shape). 'full' = release-gate models."
+    },
+    "token_budget": {
+      "type": "object",
+      "description": "Aggregate token accounting across every Claude call in this run.",
+      "properties": {
+        "input_tokens": { "type": "integer", "minimum": 0 },
+        "output_tokens": { "type": "integer", "minimum": 0 },
+        "budget_limit": { "type": "integer", "minimum": 0, "description": "Token budget the harness was configured with; may be null for unbounded." },
+        "exceeded": { "type": "boolean", "description": "True iff the harness exited early because the budget was breached." }
+      },
+      "additionalProperties": false
+    },
+    "scenarios": {
+      "type": "array",
+      "description": "One entry per scenario attempted. Order follows the scenario-dir loading order.",
+      "items": {
+        "type": "object",
+        "required": ["scenario_id", "scenario_version", "trials", "mean_score", "passed"],
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "description": "Kebab-case id matching the `id` field in the scenario YAML."
+          },
+          "scenario_version": {
+            "type": "string",
+            "description": "Scenario `version` field at run time."
+          },
+          "trials": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["trial", "result", "score"],
+              "properties": {
+                "trial": { "type": "integer", "minimum": 1, "description": "1-indexed trial number within this scenario." },
+                "result": {
+                  "type": "string",
+                  "enum": ["pass", "fail", "error"],
+                  "description": "`pass` = score ≥ pass_threshold. `fail` = score < pass_threshold. `error` = trial did not complete (timeout, API error, etc.)."
+                },
+                "score": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Per-trial aggregate score. Zero on error trials."
+                },
+                "rubric_scores": {
+                  "type": "object",
+                  "description": "Per-rubric-criterion breakdown. Keys are rubric `id` values from the scenario YAML; values are the points awarded (0 to criterion weight).",
+                  "additionalProperties": { "type": "integer" }
+                },
+                "judge_findings": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Short tags the judge emitted explaining the score (e.g., 'did_not_mention_lsp_tools', 'consulted_brain')."
+                },
+                "judge_explanation": {
+                  "type": "string",
+                  "description": "Prose paragraph from the judge explaining the score. Used by the feedback step."
+                },
+                "agent_feedback": {
+                  "type": "string",
+                  "description": "Agent-under-test's response to the feedback-elicitation prompt. Empty when `skip_feedback` was true."
+                },
+                "error": {
+                  "type": "string",
+                  "description": "When result=error, a short diagnostic string. Never contains prompt content."
+                },
+                "model_used_agent": { "type": "string" },
+                "model_used_judge": { "type": "string" },
+                "duration_seconds": { "type": "number", "minimum": 0 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "mean_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Arithmetic mean of trial scores, excluding error trials. Matches the per-scenario finding in the CMDB."
+          },
+          "score_stddev": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Sample standard deviation across trial scores. High stddev = judge is uncertain OR scenario under-specifies the rubric."
+          },
+          "passed": {
+            "type": "boolean",
+            "description": "True iff a majority of non-error trials scored ≥ pass_threshold."
+          },
+          "errors": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Count of trials with result=error. Counted separately so callers can distinguish 'bad response' from 'harness failure'."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "judge_calibration": {
+      "type": "object",
+      "description": "Results of the gold-sample calibration step run before the real trials. Omitted when `--skip-calibration` was passed (not recommended for CI).",
+      "properties": {
+        "gold_sample_count": { "type": "integer", "minimum": 0 },
+        "max_drift": { "type": "integer", "minimum": 0, "description": "Maximum |judge_score - human_score| across all gold samples. > 10 = judge drift concern." },
+        "status": { "type": "string", "enum": ["pass", "drift-warning", "drift-blocker"], "description": "Overall calibration verdict. `drift-blocker` causes the harness to exit non-zero without writing the CMDB." }
+      },
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional operator notes about this run (e.g., 'dog-food run against NeuroGrim/skills; after refine-agent-behavior.md edit')."
+    }
+  },
+  "additionalProperties": false
+}

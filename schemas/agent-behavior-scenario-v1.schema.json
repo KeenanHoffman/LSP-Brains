@@ -1,0 +1,146 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/KeenanHoffman/LSP-Brains/schemas/agent-behavior-scenario-v1.schema.json",
+  "title": "Agent Behavior Scenario v1",
+  "description": "A single agent-behavior test scenario — the non-deterministic-verification unit consumed by the LSP Brains agent-behavior scoring domain (spec §15). Authored as YAML or JSON; loaded by the `abv-run` harness. Each scenario runs one or more independent trials; each trial is prompt → response → judge → feedback. Gold samples calibrate the judge; they are NOT trials.\n\nSee spec §15 (Agent Behavior Verification) for the full authoring contract. See `agent-behavior-result-v1.schema.json` for what a run of this scenario produces.",
+  "type": "object",
+  "required": ["id", "version", "target", "prompt", "rubric", "trials"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+      "description": "Kebab-case identifier, unique within the scenario library. E.g. 'lsp-code-optimality', 'hat-discipline'."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+$",
+      "description": "Scenario schema + rubric version. Bump when the rubric or prompt changes in a way that invalidates prior scores. Runs against different versions should not be compared."
+    },
+    "target": {
+      "type": "object",
+      "required": ["kind", "scope"],
+      "description": "What agent-behavior facet this scenario tests.",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "pattern": "^(general|skill:[a-z0-9-]+|hat:[a-z0-9-]+|culture:[a-z_]+)$",
+          "description": "The class of behavior under test. 'general' for cross-cutting behaviors. 'skill:<name>' scopes to a specific skill file. 'hat:<name>' scopes to a declared hat. 'culture:<invariant>' scopes to one of the five culture invariants (positivity / integrity / honesty / critical_but_kind / respect)."
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 10,
+          "description": "One-sentence description of WHEN the measured behavior should apply. Informative; not machine-enforced. Human readers use this to decide if a scenario applies to their agent."
+        }
+      },
+      "additionalProperties": false
+    },
+    "prompt": {
+      "type": "string",
+      "minLength": 10,
+      "description": "The user-impersonation prompt sent to the agent-under-test. No templating in v1 — plain string. Authors should avoid secrets / PII in prompts (the Anthropic API sees the literal text)."
+    },
+    "system_prompt": {
+      "type": "string",
+      "description": "Optional override for the system prompt sent to the agent-under-test. When omitted, the harness composes one from the target agent's skills + hats + culture.yaml."
+    },
+    "rubric": {
+      "type": "array",
+      "minItems": 1,
+      "description": "The grading criteria. Total weights across the rubric typically sum to 100 but are not required to. Judge returns a per-criterion score (0-weight) and the per-trial total is the sum, clamped to [0, 100].",
+      "items": {
+        "type": "object",
+        "required": ["id", "weight", "description"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "description": "Snake-case identifier, unique within this scenario."
+          },
+          "weight": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Maximum points this criterion contributes. Integer so judge output is unambiguous."
+          },
+          "description": {
+            "type": "string",
+            "minLength": 20,
+            "description": "Prose describing the behavior the judge should look for. Must be specific enough that two humans scoring the same response would agree within 10 points."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "trials": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20,
+      "default": 3,
+      "description": "Number of independent trials to run per scenario execution. Non-determinism means a single trial isn't meaningful; 3-5 catches egregious cases, 10+ gives tighter distributions at proportional cost."
+    },
+    "pass_threshold": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "default": 70,
+      "description": "Per-trial score threshold for a trial to count as 'passing'. Scenario-level pass is a majority of trials passing."
+    },
+    "judge_model": {
+      "type": "string",
+      "default": "claude-sonnet-4.5",
+      "description": "Anthropic model id used to score responses. 'claude-haiku-*' for sandbox/CI; 'claude-sonnet-*' or 'claude-opus-*' for release-gate runs."
+    },
+    "agent_model": {
+      "type": "string",
+      "description": "Optional override for the model backing the agent-under-test. When omitted, harness default (from claude-proxy config) is used."
+    },
+    "timeout_seconds": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 600,
+      "default": 60,
+      "description": "Per-trial wall-clock timeout. Exceeded trials log `result: error` and are excluded from aggregate scoring (though the error itself surfaces in the CMDB findings)."
+    },
+    "feedback_prompt": {
+      "type": "string",
+      "description": "Optional override for the feedback-elicitation prompt sent to the agent-under-test after scoring. When omitted, the harness uses a default template that includes the score, rubric findings, and explanation. Supports `{score}`, `{findings}`, `{explanation}` placeholders."
+    },
+    "skip_feedback": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the feedback elicitation step is skipped. Useful for cheap smoke runs or scenarios where feedback isn't informative (e.g., the harness canary)."
+    },
+    "gold_samples": {
+      "type": "array",
+      "description": "Calibration fixtures: known-good and known-bad responses with the score a human reviewer assigned. The gold-sample test asserts the judge scores within ±10 of the human label. Frozen — edits to a gold sample require a rubric version bump.",
+      "items": {
+        "type": "object",
+        "required": ["label", "human_score", "response"],
+        "properties": {
+          "label": {
+            "type": "string",
+            "enum": ["gold-good", "gold-bad", "gold-edge"],
+            "description": "Category tag. `gold-good` = human scored ≥ 80. `gold-bad` = human scored ≤ 40. `gold-edge` = ambiguous cases near the threshold."
+          },
+          "human_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Score a human reviewer assigned after reading the response against this scenario's rubric."
+          },
+          "human_notes": {
+            "type": "string",
+            "description": "Optional reviewer notes about why the response earned that score. Not used by the judge; retained for humans debugging judge drift."
+          },
+          "response": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The (pre-recorded) agent response being scored. Plays the role of step 3 in the trial loop, without actually running the agent."
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

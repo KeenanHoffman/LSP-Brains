@@ -1,11 +1,24 @@
 # LSP Brains Specification
 
-**Version:** 2.2
-**Date:** 2026-04-17
+**Version:** 2.3
+**Date:** 2026-04-21
 **Status:** Active
 
 ### Changelog
 
+- **v2.3 (2026-04-21):** Agent Behavior Verification. New §15 formalizes
+  non-deterministic-verification of non-deterministic agent behavior as a
+  first-class methodology concern. A conformant Brain MAY implement an
+  `agent-behavior` domain backed by a scenario library + rubric-based judge;
+  v2.3 specifies the authoring contract (scenario + rubric + gold samples),
+  the distributional interpretation of scores, the feedback-ledger shape that
+  closes the refinement loop, and the interaction with governance (§5),
+  learning (§12), and culture (§14). Delivers on §14.8's "drift sensor"
+  promise in the general agent-behavior form rather than culture-only. New
+  `agent-behavior-scenario-v1.schema.json` + `agent-behavior-result-v1.schema.json`.
+  Additive only — no v2.2 conformance claim is invalidated; implementations
+  that do not ship the domain remain conformant. See `METHODOLOGY-EVOLUTION.md`
+  §11 for rationale.
 - **v2.2 (2026-04-17):** Sensor Testing Discipline. New §3.8 adds a SHOULD-level
   requirement that each sensory tool ships with an automated test validating its
   CMDB output against `cmdb-envelope-v1.schema.json`, asserting declared
@@ -58,6 +71,7 @@ interpreted as described in [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119).
 12. [Learning Protocol](#12-learning-protocol)
 13. [A2A Peer Protocol](#13-a2a-peer-protocol)
 14. [Cultural Substrate](#14-cultural-substrate)
+15. [Agent Behavior Verification](#15-agent-behavior-verification)
 - [Appendix A: Agent Output Schema](#appendix-a-agent-output-schema)
 - [Appendix B: Brain Registry Schema](#appendix-b-brain-registry-schema)
 - [Appendix C: CMDB Meta Envelope Schema](#appendix-c-cmdb-meta-envelope-schema)
@@ -1506,6 +1520,176 @@ patterns like "obviously," "just do X," condescending contractions) is a feasibl
 path. LLM-based judges are more expressive but expensive and drift-prone. This spec
 version delivers declaration + structural coherence (§14.6); content-level drift
 detection is tracked as a future spec addition.
+
+**Update (v2.3):** §15 Agent Behavior Verification delivers on this promise in a
+general form (not culture-only) — scenario-driven scoring of agent outputs against
+rubrics authored for any skill, hat, or culture invariant. `culture-invariants` is
+the first v1 scenario that applies this mechanism to the five canonical values of
+§14.1.
+
+---
+
+## 15. Agent Behavior Verification
+
+### 15.1 Concept
+
+Sections 1–14 specify how a Brain observes and scores a **project**. §15 specifies
+how a Brain observes and scores the **agents that operate within that project**.
+The observing layer must itself be observable (VISION principle #18: "sensors need
+sensors"); the agents running the sensors must themselves be scorable (VISION
+principle #19: "agents are sensed").
+
+Agent behavior is non-deterministic by construction. Two invocations of the same
+agent with the same prompt may produce different outputs; no single trial is
+authoritative. A conformant verification mechanism therefore SHALL treat each
+scenario as a distribution and SHALL NOT expose a single-trial pass/fail as a
+gating signal.
+
+A conformant Brain MAY implement an `agent-behavior` domain. When present, the
+domain scores agent outputs against a library of **scenarios** using a
+rubric-based **judge** (itself an LLM). The scoring is advisory by default; a
+Brain that promotes `agent-behavior` to a non-zero weight MUST have first passed
+a judge-calibration audit (§15.3).
+
+### 15.2 Scenario + Rubric Contract
+
+A **scenario** is the unit of agent-behavior verification. Each scenario defines:
+
+- **id** — stable, kebab-case, unique within a library.
+- **version** — bumped whenever the rubric or prompt changes in a way that
+  invalidates prior trial scores.
+- **target** — what facet of behavior the scenario measures
+  (`general`, `skill:<name>`, `hat:<name>`, or `culture:<invariant>`).
+- **prompt** — the user-impersonation turn sent to the agent-under-test.
+- **rubric** — one or more weighted criteria against which the judge grades
+  the response. Criterion weights typically sum to 100; the judge's per-criterion
+  score is ≤ the criterion's weight.
+- **trials** — number of independent trials (≥ 1; recommended 3–5).
+- **pass_threshold** — per-trial score threshold for a trial to count as
+  passing (default 70).
+- **gold_samples** — recorded responses with human-assigned scores, used
+  to calibrate the judge (§15.3).
+
+Normative shape: `agent-behavior-scenario-v1.schema.json`.
+
+Scenarios MUST NOT contain secrets or PII — the prompt text is submitted to the
+underlying model and MAY be logged by the provider. Implementations SHOULD
+include a privacy audit pass in their scenario-authoring workflow (see §15.7).
+
+### 15.3 Judge Protocol
+
+The judge is an LLM invocation that receives:
+
+1. The rubric (verbatim from the scenario).
+2. The agent-under-test's response.
+
+and returns:
+
+1. A per-criterion score (0 to criterion weight).
+2. A short list of **findings** (machine-tag strings).
+3. A prose **explanation** of the score.
+
+Normative output shape: `agent-behavior-result-v1.schema.json` (the per-trial
+object).
+
+**Calibration.** Before any scenario's trial results are admitted to the CMDB, the
+judge MUST score that scenario's gold samples. If any |judge_score − human_score|
+exceeds 10 points for a `gold-good` or `gold-bad` sample, the harness SHALL:
+
+- Emit a `drift-warning` or `drift-blocker` status in the result record.
+- Refuse to write the CMDB when drift is `drift-blocker`.
+- Surface a proposal to the operator describing the drift (see §15.5).
+
+**Multi-judge consensus.** A future spec revision MAY require multi-judge
+consensus for scenarios whose rubrics exhibit high historical variance. v1
+permits single-judge scoring; implementations that move `agent-behavior` past
+advisory weight SHOULD deploy at least two judges and take the median.
+
+### 15.4 Distributional Interpretation
+
+A scenario produces:
+
+- A `trials[]` array, one per independent trial.
+- A `mean_score` (arithmetic mean of non-error trial scores).
+- A `score_stddev` (sample standard deviation).
+- A `passed` boolean (majority of non-error trials scored ≥ pass_threshold).
+
+The **only** aggregation exposed to operators as a pass/fail signal is `passed`.
+A single trial's `score` MUST NOT be treated as authoritative. Implementations
+SHOULD surface both `mean_score` and `score_stddev` in human-facing output — a
+high mean with high stddev is a different posture than a high mean with low
+stddev, and operators benefit from the distinction.
+
+### 15.5 Feedback Loop + Refinement
+
+After the judge scores a trial, a conformant harness SHOULD solicit **feedback
+from the agent-under-test** by sending a third invocation with the score +
+rubric findings + explanation, and asking the agent how the skill or the test
+could have been clearer. The response is stored in an append-only
+**feedback ledger** (`.claude/brain/agent-behavior-feedback.jsonl`), one JSON
+line per feedback submission.
+
+**Safety rail.** The agent-under-test MUST NOT be given write access to skill
+files, hat catalogs, or culture manifests. Its feedback is text only; humans
+read the ledger, group feedback by target, and refine skills by hand. This
+bright line prevents the harness from drifting into self-training.
+
+**Proposals.** Systemic issues (three consecutive runs below 40, judge drift
+beyond the calibration window, sustained feedback clusters around one target
+file) MUST be surfaced as proposals in the Brain's proposal ledger (§12) with
+`category: "agent-behavior-regression"`. The operator triages per §12's normal
+workflow.
+
+**Delta tracking.** Implementations SHOULD expose a run-to-run diff
+(e.g., `abv-run diff <before> <after>`) so humans can verify that a skill
+refinement actually moved scores in the intended direction. Gold samples MUST
+NOT be edited to accommodate a refined agent — they are the frozen baseline.
+
+### 15.6 Interaction with Other Layers
+
+| Other layer | Interaction |
+|---|---|
+| **§3 Sensory Tool Protocol** | The harness emits a standard CMDB envelope; `agent-behavior` is a regular domain for scoring purposes. |
+| **§5 Governance Model** | `agent-behavior` MAY participate in gate tiers (immediate / before-merge / pre-deploy). v1 implementations SHOULD keep the weight at 0.0 (advisory) until a judge-calibration audit passes. |
+| **§5.5 Autonomy Resolution** | `agent-behavior` score MAY tighten autonomy as an invariant (like culture, §14.4): low behavior scores can downgrade an action from `auto` to `notify`/`approve`. It MUST NOT loosen autonomy — a high behavior score does not upgrade an action above its base level. |
+| **§12 Learning Protocol** | Proposals emitted by the harness integrate with the proposal ledger and effectiveness tracking. Agent-behavior measures *process quality*; proposal-effectiveness measures *outcome quality*. Both signals compose. |
+| **§14 Cultural Substrate** | §14's five canonical values are each a candidate rubric target. `culture-invariants` as a v1 scenario directly tests whether agent outputs respect positivity / integrity / honesty / critical_but_kind / respect. |
+
+### 15.7 Privacy + Cost Discipline
+
+- **Prompt content in scenarios MUST NOT be treated as private.** Scenarios are
+  source-controlled and submitted to the model provider on every run. Authors
+  are responsible for keeping PII, secrets, and internal-only context out of
+  scenario prompts.
+- **Audit logs MUST NOT record prompt or response content.** The audit log's
+  field allowlist is limited to metadata (scenario id, trial number, timestamp,
+  result, model ids, token counts, judge findings, error strings). This matches
+  the audit-log discipline already established in the reference implementation's
+  claude-proxy and webhook-sync services.
+- **Runs MUST account for token cost.** The harness SHALL record aggregate
+  input + output token counts per run and SHALL support a budget ceiling that
+  aborts the run if exceeded. This prevents runaway CI spend.
+
+### 15.8 Versioning
+
+Scenario schema changes are governed by §6.5's additive-bumps-by-default
+policy. A scenario's rubric changes require a bump in the scenario's `version`
+field; runs against different scenario versions MUST NOT be aggregated. The
+overall `agent-behavior-scenario-v1` schema is versioned independently; breaking
+schema changes bump to v2 and require migration tooling.
+
+### 15.9 Reference Implementation
+
+The reference implementation (NeuroGrim) ships:
+
+- A Python harness `agent-behavior-runner/` with an `abv-run` CLI.
+- Five v1 scenarios: `lsp-code-optimality`, `lsp-brain-usage`,
+  `hat-discipline`, `culture-invariants`, `honest-scoring`.
+- A `neurogrim cast agent-behavior` subcommand that pipes the harness CMDB
+  output into `.claude/agent-behavior-cmdb.json`.
+- A feedback-ledger writer + an `abv-run diff` command for refinement tracking.
+
+See NeuroGrim roadmap epic **S7-ABV** (Agent Behavior Verification).
 
 ---
 
