@@ -15,3 +15,11 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Agent-behavior verification runtime state (spec §15 / S7-ABV) — if
+# operators run the harness against the LSP-Brains Brain, the ledger
+# and per-run records live under .claude/brain/ just like the other
+# three Brains. Never commit.
+.claude/brain/agent-behavior-feedback.jsonl
+.claude/brain/agent-behavior-latest.json
+.claude/brain/agent-behavior-runs/
