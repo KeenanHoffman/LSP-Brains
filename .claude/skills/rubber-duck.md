@@ -99,11 +99,11 @@ advisor — two options, one tradeoff, no preaching.
 - **`imagination-mode.md`** — conversational approach exploration. Overlaps slightly;
   imagination-mode is broader (whole design space) and the duck is narrower (one stuck
   moment). Use the duck when you're mid-execution and hit a wall.
-- **`refocus.md`** — long-session drift. Different failure mode (losing thread) vs.
+- **`archived/refocus.md`** — long-session drift. Different failure mode (losing thread) vs.
   the duck's (stuck on one thing).
 
 ## Related reading
 
-- `culture.yaml` — the five values the duck honors
-- `spec/LSP-BRAINS-SPEC.md` §14 — Cultural Substrate
-- `spec/METHODOLOGY-EVOLUTION.md` §7 — rationale
+- `.claude/culture.yaml` — the five values the duck honors
+- `D:\Brains\LSP-Brains\spec\LSP-BRAINS-SPEC.md` §14 — Cultural Substrate
+- `D:\Brains\LSP-Brains\spec\METHODOLOGY-EVOLUTION.md` §7 — rationale
