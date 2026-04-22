@@ -1,0 +1,173 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/KeenanHoffman/LSP-Brains/schemas/domain-promotion-ledger-v1.schema.json",
+  "title": "Domain Promotion Ledger v1",
+  "description": "Append-only JSONL ledger recording domain-promotion governance events (spec §15.5 'Promotion path', v2.5 — S10-DOMAIN-PROMOTION). Three entry kinds: `promotion` (successful weight change), `rollback` (reversal of a prior promotion), `failed-attempt` (audit failed; registry unchanged; recorded for historical trail).\n\nEach line in the JSONL file is one entry. Readers reconstruct promotion state by folding the stream chronologically. Writes happen via `abv-run promote` / `abv-run rollback`; the CLI enforces schema compliance + ABV_OPERATOR env guard. Never edit entries in place — corrections are new entries superseding old ones (append-only discipline).",
+  "type": "object",
+  "oneOf": [
+    { "$ref": "#/definitions/PromotionEntry" },
+    { "$ref": "#/definitions/RollbackEntry" },
+    { "$ref": "#/definitions/FailedAttemptEntry" }
+  ],
+  "definitions": {
+    "PromotionEntry": {
+      "type": "object",
+      "required": ["ts", "entry_kind", "domain", "registry_path", "from_weight", "to_weight", "rebalance_deltas", "audit_evidence", "operator", "schema_version"],
+      "properties": {
+        "ts": {
+          "type": "number",
+          "description": "Unix seconds with fractional precision."
+        },
+        "entry_kind": { "type": "string", "const": "promotion" },
+        "domain": {
+          "type": "string",
+          "description": "Name of the domain being promoted (e.g., 'agent-behavior')."
+        },
+        "registry_path": {
+          "type": "string",
+          "description": "Path to the brain-registry.json that was mutated."
+        },
+        "from_weight": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Domain weight before the promotion."
+        },
+        "to_weight": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Domain weight after the promotion."
+        },
+        "rebalance_strategy": {
+          "type": "string",
+          "enum": ["proportional", "explicit", "none"],
+          "description": "How other domains were rebalanced to preserve sum=1.0. `proportional` = each existing non-zero domain trimmed by a uniform factor. `explicit` = operator supplied per-domain deltas. `none` = no rebalance applied (only valid when the sum was already correct post-change)."
+        },
+        "rebalance_deltas": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["before", "after"],
+            "properties": {
+              "before": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+              "after": { "type": "number", "minimum": 0.0, "maximum": 1.0 }
+            },
+            "additionalProperties": false
+          },
+          "description": "Full before/after weights for every domain in the registry. Enables exact rollback + historical reconstruction."
+        },
+        "audit_evidence": {
+          "type": "object",
+          "required": ["audit_reports", "sonnet_audit_report"],
+          "properties": {
+            "audit_reports": {
+              "type": "array",
+              "minItems": 2,
+              "items": { "type": "string" },
+              "description": "Paths to ≥ 2 calibrate report JSON files (e.g., Haiku runs)."
+            },
+            "sonnet_audit_report": {
+              "type": "string",
+              "description": "Path to the higher-fidelity validation calibrate report."
+            },
+            "red_mode_reports": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Optional paths to mock-bad-agent red-mode reports supporting the audit."
+            }
+          },
+          "additionalProperties": false
+        },
+        "operator": {
+          "type": "string",
+          "description": "Operator handle from ABV_OPERATOR env; self-asserted in v1."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Operator-supplied prose documenting the decision context."
+        },
+        "registry_backup_path": {
+          "type": "string",
+          "description": "Path to the pre-promotion registry backup."
+        },
+        "schema_version": { "type": "string", "const": "1" }
+      },
+      "additionalProperties": false
+    },
+    "RollbackEntry": {
+      "type": "object",
+      "required": ["ts", "entry_kind", "domain", "registry_path", "supersedes_ts", "restored_weights", "reason", "operator", "schema_version"],
+      "properties": {
+        "ts": { "type": "number" },
+        "entry_kind": { "type": "string", "const": "rollback" },
+        "domain": { "type": "string" },
+        "registry_path": { "type": "string" },
+        "supersedes_ts": {
+          "type": "number",
+          "description": "ts of the promotion entry this rollback reverses."
+        },
+        "restored_weights": {
+          "type": "object",
+          "additionalProperties": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+          "description": "Full weight set after the rollback — should match the `before` side of the superseded promotion's rebalance_deltas."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Operator-supplied rationale for the rollback (e.g., 'post-promotion swing blocker sustained for 7 days')."
+        },
+        "operator": { "type": "string" },
+        "notes": { "type": "string" },
+        "schema_version": { "type": "string", "const": "1" }
+      },
+      "additionalProperties": false
+    },
+    "FailedAttemptEntry": {
+      "type": "object",
+      "required": ["ts", "entry_kind", "domain", "registry_path", "failure_reason", "operator", "schema_version"],
+      "properties": {
+        "ts": { "type": "number" },
+        "entry_kind": { "type": "string", "const": "failed-attempt" },
+        "domain": { "type": "string" },
+        "registry_path": {
+          "type": "string",
+          "description": "Path to the registry the audit was targeting. Registry is NOT mutated on a failed attempt."
+        },
+        "intended_to_weight": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "The weight the audit was targeting (captured for posterity)."
+        },
+        "failure_classification": {
+          "type": "string",
+          "enum": [
+            "gold-drift",
+            "red-sample-miss",
+            "mock-mode-miss",
+            "cross-audit-variance",
+            "canary-failure",
+            "other"
+          ],
+          "description": "Which branch of the runbook's failure classification applies."
+        },
+        "failure_reason": {
+          "type": "string",
+          "description": "Prose explaining what failed and how — context for future remediation."
+        },
+        "audit_reports": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Paths to the audit reports that produced the failing signal."
+        },
+        "operator": { "type": "string" },
+        "notes": {
+          "type": "string",
+          "description": "Operator prose on next-steps (e.g., remediation task id spawned)."
+        },
+        "schema_version": { "type": "string", "const": "1" }
+      },
+      "additionalProperties": false
+    }
+  }
+}
