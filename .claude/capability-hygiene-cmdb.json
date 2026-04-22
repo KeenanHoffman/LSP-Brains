@@ -25,13 +25,13 @@
       "compliant": 2,
       "details": [
         {
-          "description_chars": 992,
-          "description_tokens_approx": 248,
-          "format": "legacy",
+          "description_chars": 512,
+          "description_tokens_approx": 128,
+          "format": "plugin",
           "has_when_to_use_signal": true,
           "invocations_in_window": 0,
           "last_invoked": null,
-          "path": "refine-judge-integrity.md",
+          "path": "refine-judge-integrity/SKILL.md",
           "points": 10,
           "skill_age_days": 0,
           "skill_id": "refine-judge-integrity",
@@ -58,8 +58,8 @@
         }
       ],
       "earned": 20,
-      "format:legacy": 1,
-      "format:plugin": 1,
+      "format:legacy": 0,
+      "format:plugin": 2,
       "ledger:low_confidence": 1,
       "ledger:total_invocations": 0,
       "possible": 20,
@@ -94,7 +94,7 @@
   ],
   "meta": {
     "schema_version": "1",
-    "updated_at": "2026-04-22T20:20:38.358809800+00:00",
+    "updated_at": "2026-04-22T20:35:39.972910200+00:00",
     "updated_by": "capability-hygiene"
   },
   "missing_when_to_use_count": 0,
@@ -103,13 +103,13 @@
   "score": 100,
   "skill_details": [
     {
-      "description_chars": 992,
-      "description_tokens_approx": 248,
-      "format": "legacy",
+      "description_chars": 512,
+      "description_tokens_approx": 128,
+      "format": "plugin",
       "has_when_to_use_signal": true,
       "invocations_in_window": 0,
       "last_invoked": null,
-      "path": "refine-judge-integrity.md",
+      "path": "refine-judge-integrity/SKILL.md",
       "points": 10,
       "skill_age_days": 0,
       "skill_id": "refine-judge-integrity",
@@ -138,5 +138,5 @@
   "total_capabilities": 2,
   "total_skills": 2,
   "under_described_count": 0,
-  "updated_at": "2026-04-22T20:20:38.358809800+00:00"
+  "updated_at": "2026-04-22T20:35:39.972910200+00:00"
 }
