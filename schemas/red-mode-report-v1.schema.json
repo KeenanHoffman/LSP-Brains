@@ -1,0 +1,133 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/KeenanHoffman/LSP-Brains/schemas/red-mode-report-v1.schema.json",
+  "title": "Agent Behavior Red-Mode Report v1",
+  "description": "The mock-bad-agent sweep report produced by `abv-run red-mode` (S9-ABV-RED-4). For each (scenario × failure-mode × trial), an adversary LLM call generates a novel bad response; the scenario's live judge scores it; the report records the outcome and aggregate statistics.\n\nDifferent from `calibration-report-v1.schema.json`: that report aggregates drift against human-labeled gold samples and against pre-recorded red-sample ceilings; this report aggregates mock adversary responses against per-mode ceilings. Consumed by operators reviewing judge-integrity signal; NOT fed into the judge-integrity ledger automatically (the ledger's append-only triage discipline assumes stable sample IDs — mock responses are ephemeral).",
+  "type": "object",
+  "required": ["run_id", "schema_version", "started_at", "finished_at", "canary_gate", "overall_status", "trial_results", "mode_summaries"],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "description": "UUID v4 for this mock-mode run. Cross-referenceable with any future ledger entries if operators choose to promote a mock response to a pre-recorded red sample."
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "1"
+    },
+    "started_at": { "type": "string", "format": "date-time" },
+    "finished_at": { "type": "string", "format": "date-time" },
+    "canary_gate": {
+      "type": "string",
+      "enum": ["pass", "fail", "skipped"],
+      "description": "Adversary gate outcome. `pass` = canary adversary produced output and judge scored it ≤ canary ceiling. `fail` = judge scored it above canary ceiling OR the adversary call errored; the full sweep is aborted. `skipped` = operator passed --skip-canary-gate (not recommended) OR the library has no canary entry."
+    },
+    "canary_score": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Judge's score on the canary adversary's output. null when canary_gate is `skipped`."
+    },
+    "overall_status": {
+      "type": "string",
+      "enum": ["pass", "red-miss", "canary-failed", "error"],
+      "description": "Aggregate verdict. `pass` = every (scenario, mode) pair scored under ceiling on at least one trial. `red-miss` = at least one (scenario, mode) pair had a trial scoring over ceiling. `canary-failed` = the adversary gate blocked the sweep. `error` = every trial errored."
+    },
+    "trial_results": {
+      "type": "array",
+      "description": "Per-trial results. One entry per (scenario × mode × trial) execution. The canary trial — when present — appears first with mode='canary'.",
+      "items": {
+        "type": "object",
+        "required": ["scenario_id", "mode", "trial", "expected_ceiling", "judge_score", "over_ceiling", "status"],
+        "properties": {
+          "scenario_id": { "type": "string" },
+          "mode": {
+            "type": "string",
+            "description": "Failure mode tag from the v1 taxonomy."
+          },
+          "trial": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Trial number within its (scenario, mode). 0 reserved for the canary gate trial."
+          },
+          "expected_ceiling": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Ceiling inherited from the adversary library's `default_ceiling` for this mode."
+          },
+          "judge_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "over_ceiling": {
+            "type": "integer",
+            "description": "Signed: judge_score - expected_ceiling. Positive = red-miss; zero or negative = pass."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "red-miss", "error"]
+          },
+          "response": {
+            "type": "string",
+            "description": "The adversary's generated response. Preserved so operators can review and optionally promote high-signal misses to pre-recorded red samples. Privacy note: mock responses are not real agent outputs — they're deliberately-bad completions generated against a scenario prompt, so no PII leak risk."
+          },
+          "judge_findings": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "judge_explanation": { "type": "string" },
+          "error": {
+            "type": "string",
+            "description": "Non-null iff adversary OR judge call failed."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "mode_summaries": {
+      "type": "array",
+      "description": "Per-(scenario, mode) aggregations. Operators read this first; drill into trial_results for specifics.",
+      "items": {
+        "type": "object",
+        "required": ["scenario_id", "mode", "expected_ceiling", "trials_total", "trials_passed", "trials_missed", "trials_errored", "max_over_ceiling", "mean_score", "status"],
+        "properties": {
+          "scenario_id": { "type": "string" },
+          "mode": { "type": "string" },
+          "expected_ceiling": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "trials_total": { "type": "integer", "minimum": 0 },
+          "trials_passed": { "type": "integer", "minimum": 0 },
+          "trials_missed": { "type": "integer", "minimum": 0 },
+          "trials_errored": { "type": "integer", "minimum": 0 },
+          "max_over_ceiling": {
+            "type": "integer",
+            "description": "Highest miss margin across the trials; 0 when no miss observed."
+          },
+          "mean_score": {
+            "type": "number",
+            "description": "Mean judge_score across non-error trials."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "red-miss", "error"],
+            "description": "Per (scenario, mode) verdict. `pass` = every non-error trial scored ≤ ceiling. `red-miss` = ≥ 1 trial scored > ceiling. `error` = every trial errored."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "token_budget": {
+      "type": "object",
+      "properties": {
+        "adversary_calls": { "type": "integer", "minimum": 0 },
+        "judge_calls": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
