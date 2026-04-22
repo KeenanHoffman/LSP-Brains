@@ -26,3 +26,8 @@ Thumbs.db
 # Judge-integrity ledger (S9-ABV-RED-3) — red-miss entries +
 # triage decisions; per-deployment, never commit.
 .claude/brain/judge-integrity-ledger.jsonl
+# Axis 4 v1 (2026-04-22) — Skill invocation ledger fed by the
+# PostToolUse hook at NeuroGrim/scripts/record-skill-invocation.sh
+# when an operator runs a Claude Code session against LSP-Brains.
+# Per-deployment runtime state; append-only JSONL.
+.claude/brain/invocation-ledger.jsonl

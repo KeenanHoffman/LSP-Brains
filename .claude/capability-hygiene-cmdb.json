@@ -28,22 +28,39 @@
           "description_chars": 992,
           "description_tokens_approx": 248,
           "has_when_to_use_signal": true,
+          "invocations_in_window": 0,
+          "last_invoked": null,
           "path": "refine-judge-integrity.md",
           "points": 10,
-          "status": "compliant"
+          "skill_age_days": 0,
+          "status": "compliant",
+          "usage_rarity": "common",
+          "usage_status": "new",
+          "window_days": 90
         },
         {
           "description_chars": 528,
           "description_tokens_approx": 132,
           "has_when_to_use_signal": true,
+          "invocations_in_window": 0,
+          "last_invoked": null,
           "path": "rubber-duck.md",
           "points": 10,
-          "status": "compliant"
+          "skill_age_days": 0,
+          "status": "compliant",
+          "usage_rarity": "common",
+          "usage_status": "new",
+          "window_days": 90
         }
       ],
       "earned": 20,
+      "ledger:low_confidence": 1,
+      "ledger:total_invocations": 0,
       "possible": 20,
-      "total": 2
+      "total": 2,
+      "usage:alive": 0,
+      "usage:dead": 0,
+      "usage:new": 2
     },
     "subagents": {
       "compliant": 0,
@@ -71,7 +88,7 @@
   ],
   "meta": {
     "schema_version": "1",
-    "updated_at": "2026-04-22T10:57:11.228987200+00:00",
+    "updated_at": "2026-04-22T11:33:00.425109+00:00",
     "updated_by": "capability-hygiene"
   },
   "missing_when_to_use_count": 0,
@@ -83,21 +100,33 @@
       "description_chars": 992,
       "description_tokens_approx": 248,
       "has_when_to_use_signal": true,
+      "invocations_in_window": 0,
+      "last_invoked": null,
       "path": "refine-judge-integrity.md",
       "points": 10,
-      "status": "compliant"
+      "skill_age_days": 0,
+      "status": "compliant",
+      "usage_rarity": "common",
+      "usage_status": "new",
+      "window_days": 90
     },
     {
       "description_chars": 528,
       "description_tokens_approx": 132,
       "has_when_to_use_signal": true,
+      "invocations_in_window": 0,
+      "last_invoked": null,
       "path": "rubber-duck.md",
       "points": 10,
-      "status": "compliant"
+      "skill_age_days": 0,
+      "status": "compliant",
+      "usage_rarity": "common",
+      "usage_status": "new",
+      "window_days": 90
     }
   ],
   "total_capabilities": 2,
   "total_skills": 2,
   "under_described_count": 0,
-  "updated_at": "2026-04-22T10:57:11.228987200+00:00"
+  "updated_at": "2026-04-22T11:33:00.425109+00:00"
 }
