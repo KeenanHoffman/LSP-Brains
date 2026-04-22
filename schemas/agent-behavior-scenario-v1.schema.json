@@ -104,6 +104,15 @@
       "items": { "type": "string", "minLength": 1 },
       "description": "Optional list of tool names (execution-based rubrics — S8-ABV-EXT-3). When present, the harness resolves each name to a schema in the shared tools library (default: `D:/Brains/.claude/agent-behavior-tools.yaml`) and passes those schemas to Anthropic's `/v1/messages` API via the `tools` parameter. The agent-under-test then emits `tool_use` content blocks; the harness appends a structured summary of the calls to the text the judge scores. Rubric criteria can reference actual tool behavior ('agent called Grep with a specific pattern') rather than stated intent ('agent said it would use Grep'). V1 tools: Grep, Read, Glob."
     },
+    "modes_applicable": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*[a-z0-9]$"
+      },
+      "description": "Optional list of adversary failure-mode names that apply to this scenario for red-mode sweeps (S10-BACKLOG-B-08). When present, `abv-run red-mode` ONLY runs (scenario × mode) pairs where the mode name is in this list. Modes NOT in the list are skipped for this scenario — the adversary is never invoked for them. Rationale: some adversary modes (e.g., `false-specifics` authored for LSP scenarios) are structurally mismatched with some scenarios' rubrics (e.g., `honest-scoring`, whose rubric rewards naming-the-route behaviors that a false-specifics response partially satisfies). Filtering by applicability eliminates the resulting structural red-misses that aren't meaningful signal.\n\nWhen the field is ABSENT, all modes in the adversary library apply (backward-compatible; preserves pre-B-08 behavior). When the field is PRESENT but an empty list, no modes apply — scenario is effectively opted out of non-canary red-mode. The canary mode always runs regardless of this list (it's the harness self-test; skipping it defeats the purpose). Names in the list must match adversary-prompt keys in the library at `D:/Brains/.claude/agent-behavior-adversary-prompts.yaml` (e.g., `false-specifics`, `bureaucratic-polish`, `confident-cat-grep`, `rubric-mimicry`, `culture-veneer`, `false-humility`)."
+    },
     "agent_model": {
       "type": "string",
       "description": "Optional override for the model backing the agent-under-test. When omitted, harness default (from claude-proxy config) is used."
