@@ -1,8 +1,173 @@
 # LSP Brains: Methodology Evolution Analysis
 
-**Date:** 2026-04-11 (original) — **Updated:** 2026-04-21 (Red Samples & Judge Integrity)
-**Context:** Stage 5 complete (7/7 stories). Stage 6 complete (dual brain + bearer + CEO topology). Stage 7 shipped the agent-behavior measurement methodology. Stage 8 shipped extensions (calibration gate, multi-judge consensus, execution-based rubrics). Stage 9 adds the control that proves the measurement can detect failure, not just score green.
+**Date:** 2026-04-11 (original) — **Updated:** 2026-04-21 (Domain Promotion Path)
+**Context:** Stages 5-6 complete; Stage 7 shipped agent-behavior measurement; Stage 8 made it trustworthy; Stage 9 proved it can detect failure. Stage 10 delivers the governance-via-evidence path from trustworthy-advisory to trustworthy-load-bearing.
 **Purpose:** Identify structural improvements to the underlying methodology.
+
+---
+
+## 13. Domain Promotion Path — governance via evidence (2026-04-21)
+
+### Problem
+
+The `agent-behavior` domain entered the methodology at weight 0.0 by
+design — LLM-as-judge scoring isn't trustworthy enough on day one to
+attach gating consequences to. S8-ABV-EXT shipped the calibration
+gate that would make LLM-as-judge trustworthy; S9-ABV-RED shipped the
+detection evidence that would make it FAIL trustworthily. With both
+pieces in hand, the outstanding question was operational, not
+technical: **how does a domain move from "trustworthy advisory" to
+"trustworthy and load-bearing" without a hand-wave?**
+
+The question generalizes. Across the reference implementation's two
+Brains (NeuroGrim, ecosystem) plus the methodology's stated pattern
+for any adopter, several advisory domains sit at weight 0.0:
+`git-health`, `rust-health`, `coherence`, `human-comms`,
+`secret-refs`, `security-standards`, `agent-behavior`. Each has a
+different path to trustworthiness — `agent-behavior` needs calibration
+audits; `secret-refs` needs provider-manifest validation; `coherence`
+needs cross-domain correlation health — but the POLICY question is
+the same: what evidence is required, who declares it sufficient, and
+how is the declaration recorded so it survives audit?
+
+Without an answer, "promote when ready" becomes a hand-wave that
+either never happens (domains stay advisory forever, value unrealized)
+or happens too eagerly (a weight flip lands via a single commit
+whose justification reviewers didn't have tools to verify). Both
+outcomes poison trust in the scoring system.
+
+### The Insight
+
+Promotion is **governance**, not a code change. The code change —
+mutating a `domain_weights` value in a registry JSON — is trivial.
+The governance — establishing that the change is warranted — is
+everything. The methodology's job is to make governance tractable:
+define what evidence counts, require it to be attached to the code
+change that uses it, preserve the decision's history, and make
+reversal cheap.
+
+Four primitives compose the governance layer:
+
+1. **An audit protocol** that produces machine-readable evidence
+   (calibration report, red-mode report). Not a vibe.
+2. **An append-only promotion ledger** that records the decision
+   with the evidence attached (paths, operator identity, the full
+   rebalance deltas). Readable in 18 months.
+3. **A CLI that REFUSES to act without evidence** — the audit
+   reports aren't decorative, they're preconditions for the
+   registry change. The machine enforces the policy.
+4. **A reversal operation** that's cheap, fast, and preserves the
+   audit trail. Reversibility is what lets the operator attempt a
+   promotion conservatively — "if this looks wrong in a week,
+   we'll roll back and investigate."
+
+These four don't eliminate judgment calls — an operator still decides
+whether to promote. They make the judgment call legible, verifiable,
+and correctable.
+
+### The Fix
+
+New spec chapter §15.5 subsection "Promotion path" formalizes the
+SHALL-level requirements:
+
+- Every promotion SHALL require operator-declared audit evidence
+  from at least two consecutive lower-cost calibration runs + one
+  higher-fidelity validation, all passing calibration + red-mode.
+- Every promotion SHALL be recorded in an append-only ledger with
+  from/to weights, full rebalance deltas, audit paths, operator
+  identity.
+- Every promotion SHALL preserve `sum(domain_weights) == 1.0` via
+  a declared rebalance strategy (proportional, explicit, or
+  refuse-to-change).
+- Every promotion SHALL provide a reversal operation that restores
+  the pre-promotion registry state from the ledger's captured
+  deltas. Reversals append; they don't delete.
+- Implementations SHOULD pair promotion with post-change swing
+  detection that surfaces proposals against the Brain's existing
+  proposal ledger (§12) rather than acting autonomously.
+
+A reference runbook ships at `NeuroGrim/docs/domain-promotion-audit.md`
+documenting the two-profile ladder (Haiku routine + Sonnet validation
+gate), pass/fail criteria, rollback procedure, post-promotion cadence,
+and — critically — how to handle audit failure. The runbook's posture
+on failure is: **stop and spawn remediation work; don't retry
+until green.** "Green on the next run" isn't the goal; "green with
+confidence, backed by evidence we'd still trust in six months" is.
+
+A generalized `abv-run promote <domain>` CLI + promotion ledger +
+rebalance helper + `abv-run rollback` + `abv-run promotion-watch`
+executes the mechanism. The CLI enforces the policy: no
+`--audit-report` argument → no promotion.
+
+### Rationale
+
+- **Separates infrastructure from action.** The mechanism is neutral;
+  it doesn't compel promotion. Any operator can use it; the decision
+  to flip a specific weight is a policy call the mechanism enables
+  but doesn't make.
+- **Evidence requirement makes the methodology self-extending.**
+  When someone proposes to promote a domain that lacks a calibration
+  harness, the machine's "no evidence, no promotion" refusal becomes
+  the forcing function to build the harness. The gap surfaces
+  immediately instead of being discovered later.
+- **Audit failure as a first-class outcome.** The spec explicitly
+  names the failure case and says: stop, don't retry, spawn
+  remediation. That's a methodology stance, not just a tool
+  behavior — it commits us to treating a "not yet" as a complete
+  answer, not as a temporary state to paper over.
+- **Reversibility is cheap by construction.** The ledger's
+  append-only history + the registry backup stamped with the
+  promotion timestamp means rollback is a single CLI call that
+  restores a known state. Operators make the promotion call
+  knowing the cost of being wrong is bounded.
+- **Generalizes across domains.** The mechanism applies to any
+  advisory-weighted domain; the only per-domain variance is what
+  "audit evidence" means (calibration reports for
+  `agent-behavior`, provider-manifest checks for `secret-refs`,
+  cross-correlation reports for `coherence`, etc.). The
+  METHODOLOGY-EVOLUTION entry cements this as a pattern, not a
+  special case.
+
+### Implementation notes
+
+Reference implementation ships across the existing three-repo
+layout. LSP-Brains gets the schema + spec. Ecosystem gets the
+CLI + ledger + rebalance helper + swing detector. NeuroGrim gets
+the reference runbook. None of the existing weighted domains
+(`test-health`, `code-quality`, `deploy-readiness` in NeuroGrim)
+are touched; their weights stay unchanged and their scoring path
+is unaffected. Stage 10 is ADDITIVE — not promoting remains
+conformant.
+
+The first concrete case — promoting `agent-behavior` in
+NeuroGrim from 0.0 to 0.05 via proportional rebalance — is
+documented in `S10-domain-promotion.md` as S10-DP-4. That story
+is guarded-pending on operator execution of the runbook's audit
+protocol. The epic closes on successful delivery of the
+mechanism; the flip itself is a separate, evidence-backed
+operator action.
+
+### Deferred
+
+- **Commit-signed operator authentication.** Current posture uses
+  `ABV_OPERATOR` env var (matches `judge-integrity-ledger`
+  posture). Hardening to signed commits for consequential ledger
+  writes is a future epic.
+- **Automated cadence enforcement.** Post-promotion calibration
+  cadence is operator-enforced via the runbook. A scheduled
+  agent trigger that runs the cadence automatically (and alerts
+  when skipped) is a future epic.
+- **Multi-step gradient promotion.** Current posture is single-
+  step (0.0 → 0.05). Promoting through intermediate values
+  (0.025 → 0.05 → 0.075) across multiple audit cycles is
+  operationally supported — operator runs multiple
+  `abv-run promote` calls with incrementally larger `--to`
+  values — but there's no automation to orchestrate the sequence.
+- **Ecosystem Brain weighting philosophy.** Every ecosystem
+  domain currently sits at 0.0. Promoting any of them requires
+  a meta-decision about what the ecosystem Brain's weighted
+  score represents (trajectory health? cross-child alignment?
+  something else?). Deliberately out of Stage 10 scope.
 
 ---
 

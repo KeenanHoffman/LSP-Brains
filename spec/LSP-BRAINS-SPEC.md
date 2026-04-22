@@ -1,11 +1,26 @@
 # LSP Brains Specification
 
-**Version:** 2.4
+**Version:** 2.5
 **Date:** 2026-04-21
 **Status:** Active
 
 ### Changelog
 
+- **v2.5 (2026-04-21):** Domain promotion path. §15.5 gains a
+  "Promotion path" subsection formalizing how an advisory-weighted
+  domain (e.g., `agent-behavior`) transitions to a non-zero weight
+  via operator-led calibration audit + append-only promotion
+  ledger + rebalance discipline + reversal operation + post-
+  promotion swing detection. Audit failure explicitly stops the
+  promotion and forces remediation before re-attempt — no retry-
+  until-green loop. Reference runbook ships as `NeuroGrim/docs/
+  domain-promotion-audit.md`. The mechanism generalizes to any
+  advisory domain (git-health, rust-health, coherence, etc.);
+  domains without a §15.3-equivalent calibration harness must
+  establish one as a forcing function before promotion. Additive
+  only — no v2.4 conformance claim is invalidated; implementations
+  that keep `agent-behavior` at weight 0.0 remain conformant. See
+  `METHODOLOGY-EVOLUTION.md` §13 for rationale.
 - **v2.4 (2026-04-21):** Red samples & judge integrity. §15.3 gains a
   "Red samples" subsection formalizing the one-sided ceiling check
   (judge_score MUST stay ≤ `expected_score_ceiling`) that proves the
@@ -1698,6 +1713,66 @@ workflow.
 (e.g., `abv-run diff <before> <after>`) so humans can verify that a skill
 refinement actually moved scores in the intended direction. Gold samples MUST
 NOT be edited to accommodate a refined agent — they are the frozen baseline.
+
+**Promotion path.** (Added in v2.5 per METHODOLOGY-EVOLUTION §13;
+S10-DOMAIN-PROMOTION.) The `agent-behavior` domain starts at
+`domain_weights: 0.0` (advisory) by default. Implementations MAY
+promote the domain past advisory weight once operators have
+established judge-trust evidence sufficient to support gating
+consequences. A conformant promotion:
+
+- SHALL require an **operator-declared calibration audit**. The
+  audit evidence MUST include at least two consecutive
+  calibration runs at a lower-cost profile (e.g., Haiku) AND one
+  validation run at a higher-fidelity profile (e.g., Sonnet),
+  each with `overall_status: "pass"` on both calibration
+  (§15.3) and red-mode (§15.3 "Red samples" subsection) outputs.
+- SHALL be recorded in an append-only promotion ledger capturing
+  the from/to weights, the full rebalance deltas (before + after
+  weights for every domain in the registry), the audit evidence
+  paths, and the operator identity.
+- SHALL preserve `sum(domain_weights) == 1.0`. Rebalance
+  strategies MAY be proportional (every existing weighted domain
+  trimmed by a uniform factor), explicit (operator supplies
+  per-domain deltas), or refuse-to-change (reject the operation
+  when the proposed change would break the sum invariant).
+- SHALL provide a reversal operation that restores the registry
+  to the pre-promotion state captured in the ledger. Reversal
+  entries append to the ledger; they do NOT delete the prior
+  promotion entry.
+- SHOULD pair with post-promotion monitoring that detects score
+  swings against the pre-promotion baseline. Swing detection
+  SHOULD surface a proposal in the Brain's proposal ledger (§12)
+  rather than acting autonomously.
+
+**Audit failure handling.** A failed audit SHALL stop the
+promotion. Implementations SHOULD NOT retry an audit against
+the same configuration until remediation work (rubric edit,
+sample library expansion, judge rotation, or taxonomy revision)
+ships. The failed attempt SHOULD be recorded in the promotion
+ledger so historical readers see the attempt, the failure
+classification, and the remediation that followed.
+
+**Cadence obligation.** Post-promotion, implementations SHOULD
+maintain calibration at a documented cadence (e.g., weekly at
+the lower-cost profile, quarterly at the higher-fidelity
+profile). The calibration gate already fires on per-run drift;
+cadence ensures drift is detected in bounded time rather than
+"whenever someone remembers to run it."
+
+Reference runbook: `NeuroGrim/docs/domain-promotion-audit.md` in
+the reference implementation. The runbook is operational, not
+normative — but any implementation-specific runbook MUST satisfy
+the SHALL-level requirements above.
+
+The promotion path generalizes: the same mechanism applies to
+any advisory-weighted domain (the v2.5 reference-implementation
+examples include `git-health`, `rust-health`, `coherence`,
+`human-comms`, `secret-refs`, `security-standards`). Domains
+without a calibration harness equivalent to §15.3 MUST define
+an evidence requirement before their promotion path is
+operational — the existence of audit evidence is the forcing
+function.
 
 ### 15.6 Interaction with Other Layers
 
