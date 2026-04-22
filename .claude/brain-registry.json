@@ -16,7 +16,9 @@
       "glossary-freshness":   0.0,
       "diagram-sync":         0.0,
       "rfc-2119-compliance":  0.0,
-      "changelog-hygiene":    0.0
+      "changelog-hygiene":    0.0,
+      "skill-coherence":      0.0,
+      "capability-hygiene":   0.0
     },
     "advisory_domains": [
       "spec-completeness",
@@ -25,7 +27,9 @@
       "glossary-freshness",
       "diagram-sync",
       "rfc-2119-compliance",
-      "changelog-hygiene"
+      "changelog-hygiene",
+      "skill-coherence",
+      "capability-hygiene"
     ],
     "principle_map": {
       "spec-completeness":   "Spec Completeness",
@@ -34,7 +38,9 @@
       "glossary-freshness":  "Glossary Freshness",
       "diagram-sync":        "Diagram Sync",
       "rfc-2119-compliance": "RFC 2119 Compliance",
-      "changelog-hygiene":   "Changelog Hygiene"
+      "changelog-hygiene":   "Changelog Hygiene",
+      "skill-coherence":     "Skill Coherence",
+      "capability-hygiene":  "Capability Hygiene"
     },
     "domain_definitions": {
       "_doc": "All domains read CMDB stubs until sensory tools land. Placeholder scores at 0 reflect unknown state; per spec principle #2 (scoring must be honest), unknown is not good.",
@@ -78,6 +84,33 @@
         "scoring_source": {
           "type": "cmdb",
           "path": ".claude/changelog-hygiene-cmdb.json"
+        }
+      },
+      "skill-coherence": {
+        "_doc": "B-11 (2026-04-22, drift-detection scope): byte-level coherence between duplicated skill files across sibling/child Brains in the fractal topology. Refresh: `neurogrim sensory skill-coherence --project-root D:/Brains/LSP-Brains/ > .claude/skill-coherence-cmdb.json`. Advisory-only in v1.",
+        "scoring_source": {
+          "type": "cmdb",
+          "path": ".claude/skill-coherence-cmdb.json"
+        },
+        "exported_variables": {
+          "skill-coherence:brains_discovered":          { "field": "brains_discovered",          "type": "number" },
+          "skill-coherence:total_duplicated_basenames": { "field": "total_duplicated_basenames", "type": "number" },
+          "skill-coherence:in_sync_count":              { "field": "in_sync_count",              "type": "number" },
+          "skill-coherence:drift_count":                { "field": "drift_count",                "type": "number" }
+        }
+      },
+      "capability-hygiene": {
+        "_doc": "B-12 (2026-04-22): scores skill description-block quality against the authoring standard in write-skill.md. The 1,536-char description block IS the routing contract in Claude Code's native skill index. Refresh: `neurogrim sensory capability-hygiene --project-root D:/Brains/LSP-Brains/ > .claude/capability-hygiene-cmdb.json`. Advisory-only in v1.",
+        "scoring_source": {
+          "type": "cmdb",
+          "path": ".claude/capability-hygiene-cmdb.json"
+        },
+        "exported_variables": {
+          "capability-hygiene:total_skills":              { "field": "total_skills",              "type": "number" },
+          "capability-hygiene:compliant_count":           { "field": "compliant_count",           "type": "number" },
+          "capability-hygiene:under_described_count":     { "field": "under_described_count",     "type": "number" },
+          "capability-hygiene:missing_when_to_use_count": { "field": "missing_when_to_use_count", "type": "number" },
+          "capability-hygiene:over_budget_count":         { "field": "over_budget_count",         "type": "number" }
         }
       }
     },
