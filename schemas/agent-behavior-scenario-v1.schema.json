@@ -154,6 +154,47 @@
         },
         "additionalProperties": false
       }
+    },
+    "red_samples": {
+      "type": "array",
+      "description": "Judge-integrity fixtures (spec §15.3 subsection 'Red samples' — S9-ABV-RED). Pre-recorded bad responses with a ceiling the live judge MUST stay under. A red-miss (judge score > ceiling) indicates the judge is failing to detect the failure mode the sample displays. Unlike gold samples (which assert ±10 of a human label), red samples are a one-sided bound: score ≤ ceiling = pass, score > ceiling = red-miss. Red samples GROW over time (new modes added as real misses surface in the judge-integrity ledger); gold samples stay frozen. Rubric version bump NOT required to add a red sample — the scenario's behavior contract is unchanged by red-sample coverage expansion.",
+      "items": {
+        "type": "object",
+        "required": ["id", "failure_mode", "expected_score_ceiling", "response"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "description": "Kebab-case identifier, unique within this scenario's red_samples list. Suggested shape: `rm-<mode>-<NN>`, e.g. `rm-false-specifics-01`. Stable — operators refer to this id in the judge-integrity ledger."
+          },
+          "failure_mode": {
+            "type": "string",
+            "minLength": 3,
+            "description": "Taxonomy tag for the kind of failure this sample displays. See `docs/agent-behavior-red-taxonomy.md` for the authoritative list (initial: false-specifics, bureaucratic-polish, confident-cat-grep, rubric-mimicry, culture-veneer, false-humility, canary). Free-text so new modes can be tagged before they're absorbed into the taxonomy."
+          },
+          "expected_score_ceiling": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Maximum score the judge may assign this response while still passing. A score ≤ ceiling = pass (judge detected the failure mode); score > ceiling = red-miss (judge over-scored a response it should have penalized). Typical ceiling 40 for substantive misses; ≤ 5 for canary samples."
+          },
+          "response": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The (pre-recorded) agent response being graded. Selected or authored to display the failure mode; MUST actually exhibit the behavior the rubric is supposed to penalize. Two-human review at authoring time reduces mislabeling."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional authoring notes: why this response displays the failure mode, what subtle cues the judge should pick up, links to prior feedback-ledger entries that inspired this sample. Not shown to the judge."
+          },
+          "retired_in_version": {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "Set to the scenario version at which this red sample was retired (e.g., because the failure mode is obsolete or the sample was mis-labeled). When present, the harness SKIPS this sample in calibration while preserving the entry as an audit trail. Never delete a red sample — retire it."
+          }
+        },
+        "additionalProperties": false
+      }
     }
   },
   "additionalProperties": false

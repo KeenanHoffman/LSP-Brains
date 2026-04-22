@@ -1,11 +1,27 @@
 # LSP Brains Specification
 
-**Version:** 2.3
+**Version:** 2.4
 **Date:** 2026-04-21
 **Status:** Active
 
 ### Changelog
 
+- **v2.4 (2026-04-21):** Red samples & judge integrity. §15.3 gains a
+  "Red samples" subsection formalizing the one-sided ceiling check
+  (judge_score MUST stay ≤ `expected_score_ceiling`) that proves the
+  judge can detect known failure modes — not just match human labels
+  within ±10. `agent-behavior-scenario-v1.schema.json` gains an
+  additive `red_samples[]` array alongside the existing `gold_samples[]`.
+  `calibration-report-v1.schema.json` gains `overall_status` values
+  `red-miss` (judge scored a red sample over its ceiling) and
+  `red-skipped` (operator deferred red-sample ceilings via
+  `--skip-red-calibration`). The bright line on refinement (§15.5 —
+  humans edit, agents do not self-refine, judge prompt is not a tuning
+  surface) extends to red samples: a red-miss accrues in an append-only
+  judge-integrity ledger and only humans decide whether the response is
+  a judge failure, a rubric gap, or a sample mis-label. Additive only —
+  no v2.3 conformance claim is invalidated. See `METHODOLOGY-EVOLUTION.md`
+  §12 for rationale.
 - **v2.3 (2026-04-21):** Agent Behavior Verification. New §15 formalizes
   non-deterministic-verification of non-deterministic agent behavior as a
   first-class methodology concern. A conformant Brain MAY implement an
@@ -1604,6 +1620,44 @@ exceeds 10 points for a `gold-good` or `gold-bad` sample, the harness SHALL:
 consensus for scenarios whose rubrics exhibit high historical variance. v1
 permits single-judge scoring; implementations that move `agent-behavior` past
 advisory weight SHOULD deploy at least two judges and take the median.
+
+**Red samples.** (Added in v2.4 per METHODOLOGY-EVOLUTION §12; S9-ABV-RED.)
+Gold samples calibrate the judge against a human label. They are a
+two-sided check (score within ±10 of the label). They DO NOT prove the
+judge can reliably detect failure in novel responses — a judge that always
+scores high might still pass a gold-bad labeled 25 by scoring it 35.
+
+A **red sample** is a pre-recorded response paired with an
+`expected_score_ceiling` the live judge MUST stay under. A red-miss
+(judge_score > ceiling) indicates the judge failed to detect the specific
+failure mode the sample displays. Red samples are a one-sided bound: score
+≤ ceiling passes, score > ceiling fails. They are authored to cover known
+failure modes (see the failure-mode taxonomy documented in the reference
+implementation). Unlike gold samples, which stay frozen, red samples GROW
+over time — new modes are added as real misses surface in production
+feedback.
+
+Implementations that run calibration SHOULD grade red samples in the same
+pass as gold samples. A red-miss SHALL:
+
+- Emit a `red-miss` status at the scenario and overall report level
+  (distinct from `drift-blocker`, which indicates gold-sample drift).
+- Refuse to write a trustworthy CMDB when overall status is `red-miss`.
+- Surface a `judge-integrity:red-miss` finding naming the scenario id and
+  the miss margin.
+
+Implementations MAY offer a `--skip-red-calibration` iteration flag that
+runs gold-sample calibration but not red-sample ceilings; the resulting
+report SHALL be flagged `red-skipped` at the overall level to preserve
+honest visibility that the gate had a gap.
+
+Red samples MUST NOT feed the refinement loop described in §15.5 through
+automation. Misses accrue in an append-only judge-integrity ledger;
+humans decide whether a miss is a judge failure (rubric tightening or
+red-sample expansion), a rubric gap (scenario edit), or a sample
+mis-label (sample retirement). The bright line that §15.5 established
+applies to red samples equally — the judge prompt itself is NOT a
+tuning surface.
 
 ### 15.4 Distributional Interpretation
 

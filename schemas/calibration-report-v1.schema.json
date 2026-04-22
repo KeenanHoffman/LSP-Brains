@@ -35,8 +35,8 @@
     },
     "overall_status": {
       "type": "string",
-      "enum": ["pass", "drift-warning", "drift-blocker"],
-      "description": "Aggregate verdict. `pass` = every gold sample within threshold. `drift-warning` = any sample drifted > threshold but ≤ 2×threshold. `drift-blocker` = any sample drifted > 2×threshold OR systematic bias (every sample off in the same direction)."
+      "enum": ["pass", "drift-warning", "drift-blocker", "red-miss", "red-skipped"],
+      "description": "Aggregate verdict. `pass` = every gold sample within threshold AND every active red sample under its ceiling. `drift-warning` = any gold sample drifted > threshold but ≤ 2×threshold (no red-miss). `drift-blocker` = any gold drift > 2×threshold OR systematic bias. `red-miss` = gold calibration passed but ≥ 1 red sample was over-ceiling (S9-ABV-RED — judge failed to detect a known failure mode). `red-skipped` = gold calibration passed and reds were explicitly skipped via `--skip-red-calibration` (iteration/authoring mode; less trust than `pass` but not blocking). Precedence worst-to-best: drift-blocker > red-miss > drift-warning > red-skipped > pass."
     },
     "max_drift": {
       "type": "integer",
@@ -107,7 +107,48 @@
           },
           "status": {
             "type": "string",
-            "enum": ["pass", "drift-warning", "drift-blocker", "error"]
+            "enum": ["pass", "drift-warning", "drift-blocker", "red-miss", "error"],
+            "description": "Scenario-level verdict. `red-miss` appears when all gold samples pass but ≥ 1 red sample was scored over its ceiling (S9-ABV-RED). Precedence within a scenario: error > drift-blocker > red-miss > drift-warning > pass."
+          },
+          "red_samples": {
+            "type": "array",
+            "description": "Per-red-sample results (S9-ABV-RED). Empty when the scenario has no red samples OR when `--skip-red-calibration` was set. Each entry captures whether the judge stayed under the sample's ceiling.",
+            "items": {
+              "type": "object",
+              "required": ["id", "failure_mode", "expected_score_ceiling", "judge_score", "over_ceiling", "status"],
+              "properties": {
+                "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$" },
+                "failure_mode": { "type": "string" },
+                "expected_score_ceiling": { "type": "integer", "minimum": 0, "maximum": 100 },
+                "judge_score": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "What the judge returned when scoring the red sample's response."
+                },
+                "over_ceiling": {
+                  "type": "integer",
+                  "description": "Signed: judge_score - expected_score_ceiling. Positive = red-miss (judge over-scored). Zero or negative = pass. The margin is informational (a miss of +3 is qualitatively different from +40)."
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["pass", "red-miss", "error"],
+                  "description": "Per-sample verdict. `pass` = judge_score ≤ ceiling. `red-miss` = judge_score > ceiling. `error` = judge call failed; caller decides whether to block."
+                },
+                "judge_findings": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "judge_explanation": { "type": "string" },
+                "error": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "red_miss_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Count of red samples where judge_score > ceiling. Redundant with iterating red_samples but useful for quick dashboards."
           }
         },
         "additionalProperties": false

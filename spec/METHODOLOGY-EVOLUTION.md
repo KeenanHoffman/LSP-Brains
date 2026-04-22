@@ -1,8 +1,54 @@
 # LSP Brains: Methodology Evolution Analysis
 
-**Date:** 2026-04-11 (original) — **Updated:** 2026-04-21 (Agent Behavior Verification)
-**Context:** Stage 5 complete (7/7 stories). Stage 6 complete (dual brain + bearer + CEO topology). Stage 7 begins with a methodology-level addition: measuring agent behavior.
+**Date:** 2026-04-11 (original) — **Updated:** 2026-04-21 (Red Samples & Judge Integrity)
+**Context:** Stage 5 complete (7/7 stories). Stage 6 complete (dual brain + bearer + CEO topology). Stage 7 shipped the agent-behavior measurement methodology. Stage 8 shipped extensions (calibration gate, multi-judge consensus, execution-based rubrics). Stage 9 adds the control that proves the measurement can detect failure, not just score green.
 **Purpose:** Identify structural improvements to the underlying methodology.
+
+---
+
+## 12. Red Samples & Judge Integrity (2026-04-21)
+
+### Problem
+
+§15 and the S8-ABV-EXT extensions shipped an increasingly trustworthy measurement chain: rubric-driven LLM-as-judge scoring, gold-sample calibration, multi-judge consensus, and execution-based evidence. Yet the suite has a blind spot nobody noticed until it was named: **the harness can only demonstrate that agents scored green. It cannot demonstrate that judges would score red when an agent actually fails.**
+
+Gold samples test agreement with a human label within ±10 — a two-sided check. If the human labeled a gold-bad at 25 and the judge returned 35, that's a pass. But "35 on a gold-bad" is consistent with *every* red response scoring 35 — the judge might be uniformly generous and never produce a truly blocking output. Every green CMDB the harness has ever emitted is consistent with a judge that only says green. Without a control scenario that intentionally forces red and is verified to produce one, we cannot distinguish "agents did well" from "the test is fail-proof."
+
+This matters before any decision to promote `agent-behavior` past advisory weight (tracked as BACKLOG item B-01 in the reference implementation). Weighted gating on evidence that can only ever be green would be negative-value observability.
+
+### The Insight
+
+Gold samples prove the judge can *agree* with a human on a specific response. **Red samples** — a new class of calibration fixture — prove the judge can *detect* specific failure modes. A red sample is a pre-recorded response paired with an `expected_score_ceiling` the judge MUST stay under. Unlike gold samples, red samples are a one-sided bound: score ≤ ceiling = pass, score > ceiling = red-miss. And unlike gold samples, which stay frozen (they're the baseline skills are refined against), red samples **grow over time** — new modes are added as real misses surface in feedback. Coverage expands; the gold-baseline stays stable.
+
+The pattern is classical test-engineering wisdom applied to non-deterministic verification: mutation testing / fault injection / canary cases. Assertions that never fire tell you nothing. The discipline transfers to LLM-as-judge systems directly, and nobody's spelled it out in the LLM-as-judge literature we've seen.
+
+### The Fix
+
+§15.3 gains a "Red samples" subsection normatively requiring:
+
+- **Schema extension.** `agent-behavior-scenario-v1.schema.json` gains an additive `red_samples[]` array. Each sample declares `id` + `failure_mode` + `expected_score_ceiling` + `response` (+ optional `notes` and `retired_in_version`). No breaking change to the existing gold-sample path.
+- **Calibration-time coverage.** Implementations SHOULD grade red samples in the same pass as gold samples. The `calibration-report-v1.schema.json` gains `red-miss` and `red-skipped` at the `overall_status` enum.
+- **Blocking precedence.** A red-miss SHALL refuse the trustworthy CMDB path (same blocking severity as gold `drift-blocker`) but emit a distinct `judge-integrity:red-miss` finding so operators can triage: judge failure, rubric gap, or sample mis-label.
+- **Iteration escape.** A `--skip-red-calibration` flag permits operators authoring new red samples to iterate without blocking the harness; the resulting CMDB is flagged `red-skipped` (less trust than `pass` but not blocking).
+- **Ledger discipline.** Red-misses accrue in an append-only judge-integrity ledger as `pending` entries; humans append `triaged` records with one of three decision branches (`confirmed-judge-miss`, `scenario-rubric-gap`, `mislabeled-red-sample`). No triage → no evidence.
+
+### Rationale
+
+- **Preserves the §15.5 bright line.** The established rule ("humans edit, agents don't self-refine; judge prompt is not a tuning surface") extends to red samples verbatim. When a red-miss is triaged as a confirmed judge failure, the refinement lever is *library expansion* (more red samples covering that surface) — NOT judge-prompt editing. This prevents the feedback loop from collapsing into self-training pressure on the judge.
+- **Makes the gating decision tractable.** B-01 (promote past advisory) becomes "red-sample coverage at or above X failure modes AND zero unexplained red-misses over Y calibration cycles." That's a measurable precondition, not a vibe check.
+- **Cheap by construction.** Architecture A (pre-recorded red samples) reuses every piece of existing calibration infrastructure. The stretch (Architecture B — live mock-bad-agent generating novel red responses per run) is deferred to BACKLOG item B-06, to be scoped after Architecture A has been in operation for ≥ 2 calibration cycles and real coverage gaps have surfaced.
+- **Honest about the limit.** Red samples only prove the judge detects the failure modes the library covers. The methodology NAMES this limit and offers two disciplines for stewarding it: (a) diversify at authoring time via a shared failure-mode taxonomy; (b) grow the library whenever real-world misses surface. A `red-coverage-staleness` signal (no new samples for N months while feedback keeps flowing) becomes a methodology smell.
+
+### Implementation notes
+
+Reference implementation lives alongside the S7-ABV/S8-ABV-EXT harness at `D:/Brains/agent-behavior-runner/`. S9-ABV-RED-1 delivers the schema + harness path; S9-ABV-RED-2 ships an initial six-mode failure-mode taxonomy (`false-specifics`, `bureaucratic-polish`, `confident-cat-grep`, `rubric-mimicry`, `culture-veneer`, `false-humility`) plus one canary red per scenario (ceiling ≤ 5); S9-ABV-RED-3 wires the judge-integrity ledger + `refine-judge-integrity.md` skill. All three stories are additive — v2.3 agent-behavior implementations remain conformant without red samples.
+
+### Deferred
+
+- **Mock-bad-agent red mode (Architecture B).** Live generation of novel red responses by a second adversary LLM. Deferred to BACKLOG B-06 after the pre-recorded-library approach has been calibrated in operation. The trade-off is richer coverage vs. non-determinism and a new trust surface ("how bad is the mock, really?") that needs its own calibration discipline.
+- **Automatic rubric tightening from ledger data.** Humans read the judge-integrity ledger and decide what to do. No pattern-match → auto-edit pipeline.
+- **Automatic red-sample generation from feedback.** Humans author samples after triage. Same discipline as gold samples.
+- **Per-project red-sample overrides.** One ecosystem-wide library in v1. Per-project overrides overlap with BACKLOG B-03.
 
 ---
 
