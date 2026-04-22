@@ -55,7 +55,7 @@ A spec repo is not a codebase, and the workflow has sharper edges:
 
 | Task | Skill |
 |------|-------|
-| Talk through a stuck problem with a Socratic subagent | `.claude/skills/rubber-duck.md` |
+| Talk through a stuck problem with a Socratic subagent | `.claude/skills/rubber-duck/SKILL.md` |
 
 The skill inventory is intentionally small. This is a spec repo; most work is prose and
 schema editing, and the Brain is more advisory than operational.
