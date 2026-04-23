@@ -1,8 +1,112 @@
 # LSP Brains: Methodology Evolution Analysis
 
-**Date:** 2026-04-11 (original) — **Updated:** 2026-04-21 (Domain Promotion Path)
-**Context:** Stages 5-6 complete; Stage 7 shipped agent-behavior measurement; Stage 8 made it trustworthy; Stage 9 proved it can detect failure. Stage 10 delivers the governance-via-evidence path from trustworthy-advisory to trustworthy-load-bearing.
+**Date:** 2026-04-11 (original) — **Updated:** 2026-04-23 (Access-pattern polymorphism — experimental observation)
+**Context:** Stages 5-6 complete; Stage 7 shipped agent-behavior measurement; Stage 8 made it trustworthy; Stage 9 proved it can detect failure. Stage 10 delivers the governance-via-evidence path from trustworthy-advisory to trustworthy-load-bearing. 2026-04-22/23 produced the first rigorous brain-vs-control measurements (three-arm comparison: no Brain, static context, live tool), which surfaced a pattern this log absorbs as §14.
 **Purpose:** Identify structural improvements to the underlying methodology.
+
+---
+
+## 14. Access-pattern polymorphism — an experimental observation (2026-04-23)
+
+### Problem
+
+Through Stages 1-13 the Brain has been discussed in the singular — as
+a thing an agent either has or doesn't. Adoption guidance, operator
+runbooks, and scoring all treat "Brain-equipped" as a binary attribute
+of a session. The Phase 2 brain-vs-control experiment (static context
+vs no context) produced mixed verdicts that could be interpreted as
+"the Brain is sometimes helpful, sometimes not" — a framing that
+leaves operators with a rough rule-of-thumb ("use it for repo-aware
+work") and no deeper model.
+
+The Phase 3 experiment added a third arm (live `brain_query` tool
+access) and produced a sharper pattern:
+
+- Every arm wins at a different task class. None dominates across all.
+- L0 (no Brain) is best on trivial tasks. L1 (static) is best on
+  repo-aware. L2 (live tool) ties L0 on trivial and loses to L1 on
+  repo-aware despite perfect routing.
+- Agent self-routing was validated: given a tool with per-domain
+  cost warnings, Sonnet invoked the Brain 100% of the time on
+  repo-aware tasks and 0% of the time on trivial tasks.
+
+### The Insight
+
+"Does the Brain help?" is the wrong question. The right question is
+**which access pattern fits this task shape?** The Brain is not a
+preset; it is a *plural substrate* — a collection of capabilities
+(sensors, correlations, skills, culture) that different tasks sample
+differently. Static injection, live tool access, and zero access are
+not competing architectures — they are *patterns* of sampling from
+the same substrate, each correct for some task shape.
+
+What the experiments elevate to a first-class methodology concern is
+not another sensor or another domain; it is the **dispatch function
+between task and access pattern**. Self-routing behavior (the agent
+deciding on its own which pattern to use) appears to already work for
+the trivial vs repo-aware distinction. What doesn't yet work is the
+*synthesis* step: when the agent does call for Brain data via a tool,
+it applies the result less effectively than when the same data is
+pre-loaded. This is a prompt-engineering frontier, not an
+architectural one.
+
+### What this section does NOT commit the spec to
+
+This entry is **observational**. It does not:
+- Rename any existing concept.
+- Introduce new normative requirements.
+- Mandate a new Brain domain, schema, or CMDB shape.
+- Trigger a spec version bump.
+
+It documents what the experiments appear to suggest as a hypothesis
+about the methodology's shape. If future controlled evidence validates
+the hypothesis (Tier 2b of the 2026-04-23 plan), the spec can absorb
+access-pattern polymorphism as a normative concept in a subsequent
+version bump with its own adversarial review. Until then, this is
+discovery log.
+
+### Rationale
+
+Premature spec changes poison trust more than delayed ones. The
+Tier 1→2a→2b→3 gating structure mirrors the Stage-10 governance
+discipline: cheap reversible work first, experimental validation
+next, normative change last with evidence attached. An operator
+reading this log in 18 months should see the hypothesis, the gate
+that would promote it, and the gate that would kill it.
+
+### Implementation notes
+
+- Experimental evidence: `.claude/experiments/brain-vs-control/`
+  (reports phase1-3, synthesis, ledger at 432 rows).
+- Tier 1 (this entry + operator-guidance updates + BACKLOG-14
+  CANDIDATE): cheap documentation, ships immediately.
+- Tier 2a (oracle-ceiling analysis on existing ledger): free,
+  deterministic, tells us whether there is upside worth chasing.
+- Tier 2b (realistic dispatcher measurement): only runs if 2a
+  shows ≥5 pt headroom over best single arm.
+- Tier 3 (spec/VISION/domain changes): only runs if 2b shows
+  measured positive evidence. Gets its own plan file + review.
+
+### Deferred
+
+- Whether the dispatch function should be an explicit Brain domain
+  (`dispatcher-quality`), a registry-level policy, a skill, or an
+  agent-prompt pattern — all candidate shapes, not selected.
+- Whether VISION.md gains a new principle ("The Brain is a
+  substrate, not a preset"). Candidate; gated on Tier 2b.
+- Whether the methodology names more access patterns than L0/L1/L2
+  (e.g., cached-digest, selective-pre-inject, agent-edited-manifest).
+  Out of scope for §14; raised in B-14.
+
+### Relationship to existing vision
+
+§14 does not alter VISION.md principles. It proposes that the
+methodology's unit of analysis for Brain-equipped sessions shift
+from "session has the Brain: yes/no" to "session deploys which
+access pattern per task." The principles governing honesty,
+observability, and governance are unchanged; what changes is where
+those principles get applied — namely, to the dispatch decision
+itself.
 
 ---
 
