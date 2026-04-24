@@ -108,6 +108,43 @@ observability, and governance are unchanged; what changes is where
 those principles get applied — namely, to the dispatch decision
 itself.
 
+### Update 2026-04-23 — one-shot scope + held-out contradiction
+
+Two subsequent pieces of evidence deserve absorption into this
+observational entry:
+
+**First**, a held-out back-test (22 tasks, 440 trials, Sonnet,
+`reframe/factual-augmentation` branch) directly **contradicted**
+the specific one-sentence dispatch rule derived from the original
+12-task benchmark. Direct agreement with oracle dropped to 40.9%
+(below the pre-registered 50% kill threshold). L1 won 18 of 22
+held-out tasks — broader than the "factual-augmentation service"
+framing suggested. The branch was abandoned per pre-registration.
+Full post-mortem at `NeuroGrim/.claude/experiments/brain-vs-
+control/reports/reframe-post-mortem.md`.
+
+**Second**, and more fundamentally: the single-turn experimental
+apparatus this discovery log rests on is a **bounded instrument**.
+It measures how static-context-injection affects single-response
+quality on a blind-judge rubric. It does NOT measure — and
+structurally cannot measure in one-shot form — the longitudinal
+value the Brain's infrastructure is organized around: consistency
+across sessions, cumulative project awareness, culture-floor
+persistence, gated-governance decision history, capability
+hygiene over time, invocation-ledger self-observability. The
+vast majority of the Brain's existing architecture is longitudinal
+by design and is out of scope for these experiments.
+
+§14's access-pattern-polymorphism observation stands, bounded by
+that scope. The methodology's primary value hypothesis remains the
+longitudinal one (persistent awareness across a project's
+lifecycle); the single-turn experimental data is a secondary
+instrument useful for specific sub-questions (context-injection
+efficiency, agent self-routing on tools, content-freshness
+failure modes). Future normative changes to the spec — in §14's
+direction or any other — require evidence beyond single-turn
+benchmarks.
+
 ---
 
 ## 13. Domain Promotion Path — governance via evidence (2026-04-21)
