@@ -6,6 +6,13 @@ through sensory tools, scoring contracts, trajectory intelligence, and gated gov
 **New here?** Read [INTRO.md](INTRO.md) first — a five-page, problem-first introduction
 to the pattern before the spec's normative detail.
 
+**Want to run a Brain, not just read about one?** The reference
+implementation is NeuroGrim (Rust). Its
+[getting-started guide](https://github.com/KeenanHoffman/NeuroGrim/blob/main/docs/getting-started.md)
+takes you from clone to a working score in ~20 minutes. Come back here
+when you want to build your own implementation or understand a
+normative contract.
+
 ## What is LSP Brains?
 
 LSP Brains defines a pattern — not a tool — for building an agent nervous system:
