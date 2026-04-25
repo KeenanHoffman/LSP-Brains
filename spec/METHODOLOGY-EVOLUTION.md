@@ -1,8 +1,279 @@
 # LSP Brains: Methodology Evolution Analysis
 
-**Date:** 2026-04-11 (original) — **Updated:** 2026-04-23 (Access-pattern polymorphism — experimental observation)
-**Context:** Stages 5-6 complete; Stage 7 shipped agent-behavior measurement; Stage 8 made it trustworthy; Stage 9 proved it can detect failure. Stage 10 delivers the governance-via-evidence path from trustworthy-advisory to trustworthy-load-bearing. 2026-04-22/23 produced the first rigorous brain-vs-control measurements (three-arm comparison: no Brain, static context, live tool), which surfaced a pattern this log absorbs as §14.
+**Date:** 2026-04-11 (original) — **Updated:** 2026-04-25 (Supply-chain awareness as first-class Brain concern)
+**Context:** Stages 5-6 complete; Stage 7 shipped agent-behavior measurement; Stage 8 made it trustworthy; Stage 9 proved it can detect failure. Stage 10 delivers the governance-via-evidence path from trustworthy-advisory to trustworthy-load-bearing. 2026-04-22/23 produced the first rigorous brain-vs-control measurements (three-arm comparison: no Brain, static context, live tool), which surfaced a pattern this log absorbs as §14. 2026-04-23/24/25 saw a PyPI supply-chain incident force the methodology to grow a normative supply-chain awareness layer (§15) — the first time the reference implementation shipped a normative protocol-shape feature ahead of the spec.
 **Purpose:** Identify structural improvements to the underlying methodology.
+
+---
+
+## 15. Supply-chain awareness as first-class Brain concern (2026-04-25)
+
+### Problem
+
+On 2026-04-23 a PyPI supply-chain incident surfaced involving
+LiteLLM 1.82.7/1.82.8. The attack vector was second-order:
+attackers compromised a security scanner binary (a malicious Trivy
+release) which then ran in CI/CD with credentials, exfiltrated
+tokens, and used those tokens to publish base64-payload-laden
+versions of an otherwise-legitimate package that executed a
+fork-bomb on `import`. The class of attack — **the scanner itself
+becomes the attack vector** — has a name: scanner-chain
+compromise.
+
+Through v2.5 the spec said nothing about supply-chain awareness as
+a Brain concern. Domains scored test health, code quality,
+deployment readiness, agent behavior, but no domain measured
+*"are the dependencies we're building on actually safe to build
+on?"* Conforming Brains were silent on the supply chain — operators
+were free to bolt on `cargo audit` / `pip-audit` / `npm audit` /
+`trivy` themselves outside the Brain's scoring loop, but the
+methodology gave no normative shape for doing so. Every adopter
+solved the problem ad-hoc, with no shared contract for how findings
+should be represented, accepted, scored, or shared between peer
+Brains.
+
+The incident also made a sharper point: **any SCA solution that
+shells out to an external scanner binary inherits that binary's
+trust.** A Brain that depends on `cargo audit` / `pip-audit` /
+`trivy` to score its supply-chain health is one trojanized release
+of those tools away from being the attack surface itself. The
+LiteLLM incident IS that scenario, and the methodology had no
+posture against it.
+
+### The Insight
+
+Supply-chain awareness is a first-class Brain concern, not a
+bolt-on. It deserves a normative section in the spec the way agent
+behavior (§15, v2.3) deserved one — because adopters need a shared
+contract, because the failure modes are too important to leave
+ad-hoc, and because the protocol shape (CMDB findings, advisory
+weights, A2A peer signals, ledger-recorded human decisions) is the
+same shape the rest of the methodology already uses.
+
+The architectural insight from the LiteLLM incident is that
+supply-chain awareness needs **three layers** that compose, not one
+monolithic SCA scan:
+
+1. **Layer 1 — Mechanical SCA.** Lockfile parsing + vulnerability-
+   database query. Deterministic, exact-match, low false-positive
+   rate. Answers: "is this dep+version on a known-bad list?"
+2. **Layer 2 — Vigilance.** Deep-signal heuristics on
+   publish-cadence, maintainer delta, signature gaps, binary
+   reproducibility, typosquat proximity, exfil indicators.
+   Probabilistic, advisory, harder to calibrate. Answers: "does
+   this dep look like it might be turning bad?"
+3. **Layer 3 — Agent-assisted human review.** Read-only static
+   analysis by an LLM-judge agent on flagged deps; humans triage
+   findings; decisions accrue in an append-only ledger. Answers:
+   "we found something worth a human eye — what did the human
+   decide and why?"
+
+The three layers compose: Layer 1 catches the known-bad with high
+precision; Layer 2 surfaces the "this smells off" signal that a
+zero-day eventually triggers; Layer 3 puts a human in the loop
+when neither mechanical answer is conclusive. None of the layers
+auto-blocks or auto-rolls-back deps in v1 — humans gate, machines
+advise.
+
+The other architectural insight is **trust-surface minimization**.
+The Brain's primary scoring path MUST NOT shell out to external
+scanner binaries, because doing so inherits scanner trust. Native-
+language SCA implementations (the reference implementation is
+native Rust) query OSV.dev directly over HTTPS, supplemented with
+a pinned local advisory database (RustSec for Rust; OSV's
+PyPA/GHSA mirrors for Python/npm). External-scanner output is
+permitted only as opt-in cross-check, never as the source of
+truth. This narrows the trust surface from "every scanner binary
+on the operator's CI runner" to "the Brain itself + a small set of
+pinned libraries + OSV.dev's HTTPS endpoint."
+
+### The Fix
+
+New spec chapter §16 "Supply-chain awareness" (v2.6) formalizes
+the three-layer contract:
+
+- **§16.1 Concept** — supply-chain awareness as a cumulative
+  property; three-layer framing; immune-system metaphor.
+- **§16.2 Layer 1 — Mechanical SCA** — normative requirements:
+  conforming Brains MUST query a vulnerability database; MUST NOT
+  shell out to external scanner binaries in their primary scoring
+  path; MUST emit findings in the CMDB envelope; SHOULD support
+  response cache + accepted-advisories file with hygiene-lever
+  semantics (a `note` is required for every accepted entry — no
+  silent acceptance).
+- **§16.3 Layer 2 — Vigilance** — normative shape for deep-signal
+  scoring; MUST be advisory weight in v1; SHOULD pass calibration
+  before any gating consequence.
+- **§16.4 Layer 3 — Agent-assisted review** — Brains MUST run
+  agent review in **read-only static analysis only** (no package
+  code execution in automated pipelines) and MUST emit decisions
+  to a `supply-chain-decision-ledger.jsonl` matching the v1
+  schema; the **human decision MUST be the gate**, not the agent.
+- **§16.5 The supply-chain-auditor hat** — conforming Brains MUST
+  expose a hat for scoped human review. Hat content is
+  implementation-defined per §5.4; the spec normatively requires
+  the hat exists.
+- **§16.6 A2A signal sharing** — bidirectional-opt-in consent
+  model. New `supply-chain-signal` A2A message type. Both peers
+  MUST declare the type in their Agent Card `accepts[]` for
+  signals to flow.
+- **§16.7 Schemas** — references the new `supply-chain-decision-
+  ledger-v1.schema.json` and `a2a-supply-chain-signal-v1.schema.json`.
+- **§16.8 Versioning + extensibility** — schemas closed but
+  additive; new entry kinds bump schema version.
+- **§16.9 Reference implementation** — pointer to NeuroGrim
+  `neurogrim-sensory/src/supply_chain_sca/` and its operator guide
+  `docs/supply-chain-sca.md`.
+
+### Spec-impl-alignment observation
+
+This is the **first time in the ecosystem's history** where the
+implementation has shipped a normative protocol-shape feature
+**before** the spec documented it. The pattern through v2.5 was
+always "spec moves first; implementation follows" — that's how
+agent behavior (§15) and A2A (§13) and cultural substrate (§14)
+landed. E-SC-2 inverted that: the LiteLLM incident created
+genuine urgency for self-protection (NeuroGrim's own dependency
+graph needed to be green before its first crates.io publish), and
+the spec section had to follow the sensor's behavior rather than
+predict it.
+
+This entry treats that ordering inversion as a methodology
+evolution in its own right. The spec-impl-alignment domain in the
+ecosystem Brain flags general drift between specification and
+implementation; this acknowledges one acceptable case where the
+ordering MAY invert. The conditions are bounded:
+
+1. **Security urgency.** A live exploit class motivating
+   self-protection in bounded time (days, not weeks).
+2. **Spec-writers have implementation experience as input.** The
+   spec section is written *after* the sensor has shipped — the
+   author observes real behavior, real edge cases, real
+   degradation modes, and writes the contract that captures what
+   the sensor demonstrably does.
+
+When BOTH conditions hold, implementation-first is acceptable.
+When either is missing — the urgency is manufactured, or the
+spec is being written without impl experience — the conventional
+"spec first, implementation follows" ordering applies. This
+discipline is not a license; it is a narrow exception with
+explicit gates.
+
+### Rationale
+
+- **Three-layer separation matches the real attack-class taxonomy.**
+  Mechanical SCA catches known-bad with low FP. Deep-signal
+  vigilance catches the still-being-published-but-suspicious cases
+  (LiteLLM's payload was visible in source diffs hours before the
+  attack was confirmed). Agent-assisted review puts a human in
+  the loop with structured agent help when the first two layers
+  produce an ambiguous signal. Collapsing these into one layer
+  would either over-block (every deep-signal alert blocks the
+  build) or under-detect (only known-bad gets caught).
+- **Trust-surface minimization is the structural answer to
+  scanner-chain compromise.** Native-language SCA + direct
+  OSV.dev + pinned local advisory submodule + opt-in external
+  cross-check makes the Brain's own dependency on security
+  tooling auditable line-by-line. This is the methodology's
+  answer to "the scanner itself can be the attack vector": don't
+  ship one.
+- **Bidirectional-opt-in A2A consent is the conservative
+  posture.** Supply-chain findings name specific packages and
+  often specific maintainer behavior. Auto-broadcasting a finding
+  to peer Brains creates legal exposure (defamation,
+  tortious-interference) and also creates a multiplier on
+  potential false-positives. Bidirectional opt-in (both peers
+  declare `supply-chain-signal` in their Agent Card `accepts[]`)
+  is tighter than the existing one-direction model and was a
+  conscious choice. v2.7 may relax if real demand surfaces.
+- **Read-only static analysis as MUST, not SHOULD.** A Brain that
+  executes package code in its automated review pipeline is
+  potentially executing the very attack it is reviewing. The
+  bright line is "no execution"; this is a security-critical
+  constraint, not a quality recommendation.
+- **Count-based scoring rubric.** OSV batch responses don't carry
+  per-advisory severity for many ecosystems; many RustSec
+  advisories (especially `informational = "unmaintained"`) have no
+  severity. A count-based rubric (0/1/2/3/4+ unaccepted →
+  100/75/50/25/0) is honest about what the sensor can measure
+  reliably. Severity-weighted scoring is a calibration candidate
+  for v2.7+.
+- **Accepted-advisories hygiene lever.** An advisory accepted
+  silently is the failure mode the file is supposed to prevent.
+  Requiring a non-empty `note` field on every accepted entry
+  forces the operator to write down WHY — which is what makes the
+  acceptance auditable in 18 months when the operator who made the
+  decision has rotated off the project.
+
+### Implementation notes
+
+Reference implementation lives at
+`D:/Brains/NeuroGrim/neurogrim/crates/neurogrim-sensory/src/supply_chain_sca/`:
+
+- `lockfile/cargo.rs` + `python.rs` + `npm.rs` + `pnpm.rs` +
+  `yarn.rs` — native parsers covering `Cargo.lock`, `uv.lock` +
+  `requirements*.txt`, `package-lock.json` v2/v3, `pnpm-lock.yaml`
+  v6/v9, `yarn.lock` (Classic + Berry).
+- `osv.rs` — direct OSV.dev `/v1/querybatch` client over `reqwest`
+  with file-backed 24h cache.
+- `rustsec.rs` — local advisory-db submodule pinned to a specific
+  commit; OSV-miss coverage + offline capability.
+- `accepted.rs` — operator triage file
+  (`.claude/supply-chain-accepted-advisories.toml`) with required
+  `note` hygiene lever.
+- `scoring.rs` — count-based rubric (E-SC-8 calibration candidate
+  for severity-weighted upgrade).
+
+The CMDB shape extends `cmdb-envelope-v1.schema.json` via
+`additionalProperties` (no breaking change to the envelope). Two
+new schemas land in this evolution: `supply-chain-decision-
+ledger-v1.schema.json` (mirrors the `domain-promotion-ledger-v1`
+pattern; five entry kinds — accept / reject / pin-to-last-good /
+review-pending / review-triaged) and `a2a-supply-chain-signal-v1.schema.json`
+(payload shape for the new A2A message type).
+
+Operational scaffolding lives outside the Rust code:
+- `audit/ROLLBACK-PLAYBOOK.md` (ecosystem repo) — sensor-specific
+  recovery procedures populated epic-by-epic.
+- `audit/TOOL-TRUST-NOTES.md` (ecosystem repo) — running record of
+  tool-trust observations as ideas surface.
+- `BEFORE-PUBLIC-RELEASE.md § Gate 11` — master gate forbidding
+  `cargo publish` until Layer 1 is green and the sensor's own
+  CMDB shows score 100.
+
+### Deferred
+
+- **Layer 2 (vigilance).** §16.3 names the seven sub-sensors
+  (publish-cadence, maintainer-delta, signature gap, binary
+  reproducibility, typosquat proximity, transitive surface delta,
+  exfil indicator) but the reference implementation's E-SC-5 epic
+  is the body of work. v2.6 establishes the contract; v2.7+ may
+  tighten it once calibration evidence accrues.
+- **Layer 3 (agent review).** §16.4 names the read-only static
+  constraint, the ledger schema, and the human-decision gate. The
+  reference implementation's E-SC-6 epic ships the
+  supply-chain-auditor hat content + the LLM-as-judge invocation
+  flow. The protocol shape is normative now; the specific
+  implementation is post-v2.6.
+- **Severity-weighted scoring.** Count-based scoring is honest
+  about v1's data quality. As OSV severity coverage improves and
+  RustSec adds severity to historically-unscored advisories, v2.7
+  may add severity weighting as an opt-in scoring mode.
+- **Cross-Brain finding aggregation.** §16.6 specifies the A2A
+  signal envelope but does not specify aggregation semantics
+  (e.g., "two independent peers flagging the same package
+  bumps the finding to higher confidence"). That is a calibration
+  candidate for v2.7+ once enough peer Brains exist for the
+  pattern to be observable.
+- **Active blocking / auto-rollback.** v1 is advisory + operator-
+  gated. The publish-day runbook is the gate; the sensor proposes
+  but the human disposes. Auto-rollback is a candidate for v3+
+  once human-agreement rates on Layer 3 findings demonstrate the
+  agent can be trusted with a tighter loop.
+- **Severity-aware A2A signal aggregation.** The `severity_class`
+  field in `a2a-supply-chain-signal-v1` allows downstream
+  aggregation but does not define aggregation rules. Operators
+  configuring multi-Brain topologies define their own rules in v1.
 
 ---
 

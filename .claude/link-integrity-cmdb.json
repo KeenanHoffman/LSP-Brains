@@ -1,18 +1,18 @@
 {
   "meta": {
     "updated_by": "check-link-integrity",
-    "updated_at": "2026-04-17T19:15:23.785746Z",
+    "updated_at": "2026-04-25T21:15:04.253298Z",
     "source": "scan of spec prose for \u00a7N / Section N / Appendix X references vs actual headings",
     "schema_version": "1"
   },
   "score": 100,
-  "updated_at": "2026-04-17T19:15:23.785746Z",
+  "updated_at": "2026-04-25T21:15:04.253298Z",
   "findings": [
     {
       "name": "finding-000",
       "status": "info",
       "points": 0,
-      "detail": "References scanned: 189"
+      "detail": "References scanned: 319"
     },
     {
       "name": "finding-001",
@@ -22,7 +22,7 @@
     }
   ],
   "exported_variables": {
-    "links:total": 189,
+    "links:total": 319,
     "links:broken": 0
   }
 }

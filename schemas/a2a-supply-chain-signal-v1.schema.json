@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/KeenanHoffman/LSP-Brains/schemas/a2a-supply-chain-signal-v1.schema.json",
+  "title": "A2A Supply-chain Signal Payload v1",
+  "description": "Payload shape for the `supply-chain-signal` A2A message type (spec §16.6, v2.6 — E-SC-7). Carried as the `payload` of an `a2a-envelope-v1` whose `message_type` is `supply-chain-signal`.\n\nConsent model: bidirectional opt-in. A Brain MUST declare `supply-chain-signal` in its Agent Card `capabilities.accepts[]` to receive signals; MUST declare it in `capabilities.emits[]` to send signals. A Brain MUST NOT send a `supply-chain-signal` to a peer whose Agent Card does not declare `supply-chain-signal` in `accepts[]`. This is a tighter posture than the one-direction-by-Agent-Card-declaration default for other A2A message types — see §16.6 rationale (legal exposure, false-positive multiplication).\n\nLanguage discipline: published findings MUST use non-attributive language per §16.4. The `legal_disclaimer` field is a forcing function: implementations SHOULD populate it with a short, conservative-language summary that operators can quote in human-facing reports without legal review on each finding.\n\nReceivers MUST treat signals as advisory input. Receivers MAY aggregate signals across peers via `cross_brain_count` to support 'two independent peers flagged this package' confidence signals; aggregation rules are implementation-defined in v1 and a candidate for normative specification in a future version.",
+  "type": "object",
+  "required": ["package", "severity_class", "discovery_source", "peer_brain_id", "schema_version"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1",
+      "description": "Payload schema version. Independent from the enclosing `a2a-envelope-v1` schema_version."
+    },
+    "advisory_id": {
+      "type": "string",
+      "description": "Optional canonical advisory identifier (CVE-YYYY-NNNNN, RUSTSEC-YYYY-NNNN, GHSA-xxxx-xxxx-xxxx, OSV-YYYY-NNNN, etc.). Absent for vigilance/agent-review signals that did not produce a registry-tracked advisory."
+    },
+    "package": {
+      "type": "object",
+      "required": ["name", "ecosystem", "version"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Package name as it appears in its registry."
+        },
+        "ecosystem": {
+          "type": "string",
+          "description": "Ecosystem identifier (OSV.dev convention: 'crates.io', 'PyPI', 'npm', 'Go', 'Maven', 'RubyGems', 'NuGet', etc.)."
+        },
+        "version": {
+          "type": "string",
+          "description": "The specific version that triggered the signal (e.g., '1.82.7'). For range-based advisories, this SHOULD be the highest version observed in the originating Brain's dependency graph."
+        },
+        "version_range": {
+          "type": "string",
+          "description": "Optional. The full affected version range as documented by the originating advisory (e.g., '>=1.82.7,<1.82.9')."
+        }
+      },
+      "additionalProperties": false
+    },
+    "severity_class": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low", "informational"],
+      "description": "Severity classification. `informational` covers RustSec-style 'unmaintained' notices and other no-active-vulnerability-but-worth-knowing signals. Implementations SHOULD use the source advisory's severity when present and SHOULD default to `informational` for vigilance/agent-review signals without a registry severity."
+    },
+    "discovery_source": {
+      "type": "string",
+      "enum": ["osv", "rustsec", "pypa", "ghsa", "vigilance", "agent-review", "operator", "other"],
+      "description": "Where the signal originated. `osv`/`rustsec`/`pypa`/`ghsa` indicate Layer 1 mechanical SCA matches. `vigilance` indicates a Layer 2 deep-signal heuristic. `agent-review` indicates a Layer 3 agent finding. `operator` indicates a manual operator-authored signal. `other` for sources not enumerated."
+    },
+    "peer_brain_id": {
+      "type": "string",
+      "description": "Identifier of the originating Brain. Matches the id in its Agent Card."
+    },
+    "cross_brain_count": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "How many peer Brains (including the originator) have independently surfaced this signal. Supports 'two independent peers flagged this package' confidence signals. Defaults to 1 (originator only). Aggregation rules are implementation-defined in v1."
+    },
+    "discovered_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp of when the originating Brain first detected the signal. Receivers MAY use this for staleness checks."
+    },
+    "advisory_uri": {
+      "type": "string",
+      "format": "uri",
+      "description": "Optional pointer to the canonical advisory page (OSV.dev advisory URL, RustSec advisory file, GHSA URL, etc.)."
+    },
+    "summary": {
+      "type": "string",
+      "description": "Short prose summary of the signal (one sentence). Non-attributive language REQUIRED per §16.4 — describe behavior or pattern, not maintainer intent."
+    },
+    "legal_disclaimer": {
+      "type": "string",
+      "description": "Conservative-language summary suitable for inclusion in human-facing reports without per-finding legal review. Forcing function for §16.4's non-attributive-language requirement. Implementations SHOULD populate this for any signal shared with peers; receivers SHOULD prefer this field over `summary` when displaying findings to humans."
+    },
+    "recommended_action": {
+      "type": "string",
+      "enum": ["pin-to-last-good", "remove", "downgrade", "review-required", "no-action-yet", "other"],
+      "description": "Optional originator-recommended action. Receivers MUST treat as advisory; the human-decision gate per §16.4 still applies on the receiver side."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Optional implementation-defined metadata (e.g., originating CMDB path, scenario id, evidence URIs). Implementations SHOULD avoid placing PII or secrets here.",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

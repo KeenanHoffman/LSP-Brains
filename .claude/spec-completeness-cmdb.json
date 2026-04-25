@@ -1,24 +1,24 @@
 {
   "meta": {
     "updated_by": "check-spec-completeness",
-    "updated_at": "2026-04-17T19:15:26.573088Z",
+    "updated_at": "2026-04-25T21:15:06.685691Z",
     "source": "scan of spec/LSP-BRAINS-SPEC.md: TOC entries vs section bodies, TBD markers in normative sections",
     "schema_version": "1"
   },
   "score": 100,
-  "updated_at": "2026-04-17T19:15:26.573088Z",
+  "updated_at": "2026-04-25T21:15:06.685691Z",
   "findings": [
     {
       "name": "finding-000",
       "status": "info",
       "points": 0,
-      "detail": "TOC entries: 14"
+      "detail": "TOC entries: 16"
     },
     {
       "name": "finding-001",
       "status": "info",
       "points": 0,
-      "detail": "Section headings found: 14"
+      "detail": "Section headings found: 16"
     },
     {
       "name": "finding-002",
@@ -34,7 +34,7 @@
     }
   ],
   "exported_variables": {
-    "spec:toc_entries": 14,
+    "spec:toc_entries": 16,
     "spec:missing_bodies": 0,
     "spec:tbd_count": 0
   }

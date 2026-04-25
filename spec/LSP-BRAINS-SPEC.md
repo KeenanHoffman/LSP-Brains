@@ -1,11 +1,43 @@
 # LSP Brains Specification
 
-**Version:** 2.5
-**Date:** 2026-04-21
+**Version:** 2.6
+**Date:** 2026-04-25
 **Status:** Active
 
 ### Changelog
 
+- **v2.6 (2026-04-25):** Supply-chain awareness. New §16 formalizes
+  supply-chain awareness as a first-class Brain concern, structured
+  as three composing layers — Layer 1 mechanical SCA (lockfile +
+  vulnerability-database query), Layer 2 vigilance (deep-signal
+  publishing-behavior heuristics), Layer 3 agent-assisted human
+  review (read-only static analysis + decision ledger). Conforming
+  Brains MUST NOT shell out to external scanner binaries in their
+  primary scoring path — the LiteLLM 2026-04-23 incident
+  established scanner-chain compromise as a real attack class, and
+  the methodology's structural mitigation is to query a
+  vulnerability database (OSV.dev RECOMMENDED) directly. Layer 3
+  MUST run agent review in read-only static-analysis mode (no
+  package code execution); decisions MUST be recorded in an
+  append-only `supply-chain-decision-ledger.jsonl` matching the new
+  `supply-chain-decision-ledger-v1.schema.json`. A new A2A message
+  type, `supply-chain-signal`, carries findings between peer
+  Brains under a **bidirectional opt-in** consent model — both
+  peers MUST declare the type in their Agent Card before signals
+  flow, a tighter posture than other A2A messages owing to the
+  legal-exposure profile of supply-chain findings. Two new schemas
+  (`supply-chain-decision-ledger-v1.schema.json`,
+  `a2a-supply-chain-signal-v1.schema.json`) and additive enum
+  extensions to `a2a-envelope-v1.schema.json` and
+  `agent-card-v1.schema.json` (new `supply-chain-signal` value).
+  Additive only — no v2.5 conformance claim is invalidated;
+  implementations that do not ship any of the three layers remain
+  conformant. This is the FIRST methodology evolution where the
+  reference implementation shipped a normative protocol-shape
+  feature ahead of the spec — see `METHODOLOGY-EVOLUTION.md` §15
+  for rationale (security-urgency exception with bounded
+  conditions; not a general license for spec-impl-alignment
+  drift).
 - **v2.5 (2026-04-21):** Domain promotion path. §15.5 gains a
   "Promotion path" subsection formalizing how an advisory-weighted
   domain (e.g., `agent-behavior`) transitions to a non-zero weight
@@ -103,6 +135,7 @@ interpreted as described in [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119).
 13. [A2A Peer Protocol](#13-a2a-peer-protocol)
 14. [Cultural Substrate](#14-cultural-substrate)
 15. [Agent Behavior Verification](#15-agent-behavior-verification)
+16. [Supply-chain Awareness](#16-supply-chain-awareness)
 - [Appendix A: Agent Output Schema](#appendix-a-agent-output-schema)
 - [Appendix B: Brain Registry Schema](#appendix-b-brain-registry-schema)
 - [Appendix C: CMDB Meta Envelope Schema](#appendix-c-cmdb-meta-envelope-schema)
@@ -1822,6 +1855,373 @@ See NeuroGrim roadmap epic **S7-ABV** (Agent Behavior Verification).
 
 ---
 
+## 16. Supply-chain Awareness
+
+### 16.1 Concept
+
+Sections 1–15 specify how a Brain observes a project, scores it,
+correlates findings, learns from outcomes, and verifies the agents
+operating on it. §16 specifies how a Brain observes the **supply
+chain that the project depends on** — the dependency graph
+(declared and transitive), the publishers behind each dep, the
+behavior of those publishers over time, and the patterns that
+distinguish a safe-to-build-on package from one that has gone or
+is going bad.
+
+The motivating observation is that supply-chain attacks are now a
+first-class threat-class against the projects a Brain observes. A
+project may be internally healthy — its tests pass, its code is
+clean, its agents behave well — and still ship a critical
+vulnerability to its users because a transitive dependency was
+compromised. Existing domains do not measure this surface; §16
+gives it normative shape.
+
+A second motivating observation is that **the security tooling
+itself can be the attack vector**. A Brain whose primary scoring
+path shells out to an external scanner binary inherits that
+scanner's trust. The 2026-04-23 LiteLLM incident (METHODOLOGY-
+EVOLUTION §15) established this attack class concretely. §16's
+normative posture is that conforming Brains MUST NOT shell out to
+external scanner binaries in their primary scoring path; they
+MUST query a vulnerability database directly (OSV.dev RECOMMENDED)
+and MAY supplement with pinned local advisory sources.
+
+Supply-chain awareness is structured as **three composing layers**:
+
+1. **Layer 1 — Mechanical SCA** — Lockfile parsing + vulnerability-
+   database query. Deterministic, exact-match.
+2. **Layer 2 — Vigilance** — Deep-signal heuristics on
+   publish-cadence, maintainer delta, signature gaps, binary
+   reproducibility, typosquat proximity, transitive surface delta,
+   exfil indicators. Probabilistic, advisory.
+3. **Layer 3 — Agent-assisted human review** — Read-only static
+   analysis by an LLM-judge agent on flagged deps; humans triage;
+   decisions accrue in a normative append-only ledger.
+
+The three layers compose. Layer 1 catches the known-bad with high
+precision. Layer 2 surfaces the "this looks suspicious" signal that
+a zero-day eventually triggers. Layer 3 puts a human in the loop
+when neither machine answer is conclusive. **No layer auto-blocks
+or auto-rolls-back deps in v1 — humans gate, machines advise.**
+
+Conforming Brains MAY implement any subset of the three layers;
+SHOULD implement Layer 1 (it is the lowest-cost, highest-precision
+contribution); MUST honor the contracts of any layer they do
+implement. A Brain that implements no layers is conformant but
+silent on the supply-chain surface; the spec does not require
+opt-in.
+
+### 16.2 Layer 1 — Mechanical SCA
+
+Layer 1 produces deterministic findings by:
+
+1. Parsing the project's lockfile(s) to enumerate the resolved
+   dependency graph (direct + transitive).
+2. Querying a vulnerability database for advisories matching each
+   `(name, version, ecosystem)` tuple.
+3. Filtering findings against an operator-curated accepted-
+   advisories file.
+4. Emitting CMDB findings + a score.
+
+Normative requirements for a Layer 1 implementation:
+
+- **Direct vulnerability-database query** — Conforming Brains MUST
+  query a vulnerability database directly over a network protocol
+  (HTTPS RECOMMENDED). OSV.dev is RECOMMENDED as the primary
+  source; implementations MAY use ecosystem-native databases
+  (RustSec for Rust, PyPA for Python, GHSA for npm) as supplements
+  or fallbacks. The data source MUST be documented in the
+  implementation's operator guide.
+- **No external scanner binaries in the primary scoring path** — Conforming Brains MUST NOT shell out to `cargo audit` /
+  `pip-audit` / `npm audit` / `trivy` / `grype` / `osv-scanner` /
+  any equivalent external scanner binary as the primary source of
+  Layer 1 findings. Implementations MAY accept output from such
+  tools as an opt-in cross-check; the cross-check MUST NOT be the
+  source of truth. Rationale: the LiteLLM 2026-04-23 incident
+  (METHODOLOGY-EVOLUTION §15) demonstrated that scanner binaries
+  themselves are a viable attack vector ("scanner-chain
+  compromise"); narrowing the trust surface to the Brain itself +
+  its pinned libraries + its vulnerability-database HTTPS endpoint
+  is a structural mitigation.
+- **CMDB envelope conformance** — Layer 1 output MUST be a CMDB
+  envelope conforming to `cmdb-envelope-v1.schema.json`. Each
+  advisory SHOULD appear as one entry in `findings[]`. Domain
+  name SHOULD include `supply-chain-sca` (kebab-case; ecosystem-
+  agnostic naming RECOMMENDED).
+- **Response cache** — Implementations SHOULD support a local
+  response cache for vulnerability-database queries with a
+  documented TTL (24 hours RECOMMENDED) and an operator-controlled
+  bypass mechanism (e.g., environment variable).
+- **Accepted-advisories file with hygiene lever** — Implementations
+  SHOULD support an operator-curated file of accepted advisories
+  (path implementation-defined; `.claude/supply-chain-accepted-
+  advisories.toml` RECOMMENDED). Each accepted entry MUST require
+  a non-empty `note` field documenting why the advisory has been
+  accepted; entries without a `note` MUST be silently skipped (the
+  hygiene lever — silent acceptance is the failure mode the file
+  is intended to prevent).
+- **Graceful degradation** — Implementations MUST NOT panic when
+  the vulnerability database is unreachable. The expected
+  degradation path is: serve from cache + pinned local advisory
+  source if present, surface the degradation in the CMDB extras
+  (e.g., `osv_reachable: false`), and emit a `lockfile_unreadable`
+  or equivalent sensor_status when the lockfile itself is missing.
+- **Score model** — The scoring rubric is implementation-defined.
+  v1 implementations SHOULD use a count-based rubric (e.g., 0
+  unaccepted advisories → 100; 4+ → 0) until severity coverage
+  improves across vulnerability databases. Severity-weighted
+  rubrics MAY be opt-in alternatives.
+- **Domain weight default** — The `supply-chain-sca` domain SHOULD
+  default to weight 0.0 (advisory) for v1; promotion past advisory
+  follows §15.5 governance discipline.
+
+### 16.3 Layer 2 — Vigilance
+
+Layer 2 produces probabilistic findings by analyzing **publishing
+behavior** of the dependencies in the graph:
+
+1. **Publish cadence** — Step-function changes in release frequency
+   (e.g., a package that hadn't shipped in 18 months suddenly
+   ships three releases in a week).
+2. **Maintainer delta** — New maintainers added within a configured
+   window before a release.
+3. **Signature gaps** — Sigstore / GPG / trusted-publishing presence
+   versus last-known-good for the same package.
+4. **Binary reproducibility** — Registry-tarball hash versus
+   source-tag hash, when both are available.
+5. **Typosquat proximity** — Levenshtein distance ≤ 1 to popular
+   packages on the same registry.
+6. **Transitive surface delta** — Dep-count change between
+   adjacent versions of the same package (e.g., a patch release
+   that suddenly pulls in 40 new transitive deps).
+7. **Exfil indicators** — Static-analysis heuristics for base64
+   strings, dynamic `eval`/`exec`, `subprocess` invocations,
+   network-endpoint additions in recent versions.
+
+Normative requirements for a Layer 2 implementation:
+
+- **Advisory weight only in v1** — The `supply-chain-vigilance`
+  domain (or equivalent) MUST default to `domain_weights: 0.0`
+  in v1. Promotion past advisory weight requires a calibration
+  audit equivalent in spirit to §15.3 (operator-declared evidence
+  of acceptable false-positive rate against a fixture library).
+  See §15.5's governance pattern for the promotion path.
+- **Findings format** — Each Layer 2 finding SHOULD include the
+  signal kind (one of the seven above or an
+  implementation-defined extension), the package + version,
+  recent observation history sufficient to reproduce the signal,
+  and a confidence score in [0, 1].
+- **No primary gating in v1** — Layer 2 findings MUST NOT be the
+  sole basis for blocking a publish or a merge in v1. They MAY be
+  the basis for surfacing a Layer 3 review ticket (§16.4).
+- **CMDB envelope conformance** — Layer 2 output MUST conform to
+  `cmdb-envelope-v1.schema.json`.
+
+### 16.4 Layer 3 — Agent-assisted Human Review
+
+Layer 3 puts a human reviewer in the loop, structured by an LLM
+agent that produces read-only static-analysis findings to inform
+the human decision.
+
+Normative requirements for a Layer 3 implementation:
+
+- **Read-only static analysis** — The agent reviewing a flagged
+  dependency MUST NOT execute package code as part of the review.
+  This is a security-critical constraint: an agent that executes
+  potentially-malicious package code in its review pipeline is
+  potentially executing the very attack it is reviewing. The
+  constraint applies to the **automated** review path; a human
+  operator who chooses to run package code in a separately-
+  isolated environment as part of manual triage is not bound by
+  §16.4 — but that path MUST be documented in the
+  implementation's operator guide as a manual escalation, not an
+  automated review step.
+- **Prompt-injection isolation** — The agent reviewer SHOULD be
+  fed only specific file excerpts (e.g., the diff and the
+  changed files), not the full package context. README files,
+  long-form documentation, and other free-text artifacts in the
+  package are common prompt-injection vectors and SHOULD be
+  excluded from the agent's input or sanitized before inclusion.
+  Container-isolated agent execution is RECOMMENDED for
+  implementations where the threat model warrants it.
+- **Decision ledger** — Every Layer 3 outcome MUST be recorded in
+  an append-only `supply-chain-decision-ledger.jsonl` conforming
+  to `supply-chain-decision-ledger-v1.schema.json` (§16.7). The
+  ledger captures the package, the triggering signals from
+  Layer 1 + Layer 2, the agent's findings, the human operator's
+  identity, the human's notes, and the decision (accept / reject /
+  pin-to-last-good / review-pending / review-triaged).
+- **Human decision is the gate** — The agent reviewer MUST NOT
+  auto-accept, auto-reject, or auto-pin findings in v1. Every
+  decision MUST have a human operator's identity recorded in the
+  ledger entry. Implementations MAY surface agent-recommended
+  decisions to the operator; they MUST NOT skip the human-
+  decision step.
+- **Append-only discipline** — Ledger entries MUST NOT be edited
+  in place. Triage corrections are recorded as new
+  `review-triaged` entries that supersede a prior
+  `review-pending` (the new entry's `supersedes_ts` references the
+  superseded entry's `ts`). This is the same append-only pattern
+  established by `domain-promotion-ledger-v1` (§15.5) and
+  `agent-behavior-feedback.jsonl` (§15.5).
+- **Output language discipline** — Findings published outside the
+  Brain (e.g., shared via §16.6 A2A signal) MUST use non-
+  attributive language. "This package's release pattern…" is
+  acceptable; "Maintainer X introduced a malicious payload…" is
+  not. Rationale: supply-chain findings about specific maintainers
+  carry legal-exposure risk (defamation, tortious interference);
+  conservative language is the default. The
+  `a2a-supply-chain-signal-v1.schema.json` carries an operator-
+  visible `legal_disclaimer` field as a forcing function.
+
+### 16.5 The supply-chain-auditor Hat
+
+A conforming Brain that ships any of Layers 1–3 MUST expose a
+**supply-chain-auditor hat** — a scoped agent persona that handles
+package-level review. Per §5.4, hat content is implementation-
+defined; the spec normatively requires the hat exist with the
+following operational scope:
+
+- **Provenance verification** — The hat checks that a package's
+  declared provenance (Sigstore attestation, PyPI trusted
+  publisher, npm signed publish, etc.) matches the registry's
+  records.
+- **Unreviewed-dep audit** — The hat enumerates dependencies
+  introduced or upgraded since the last review checkpoint and
+  surfaces them for triage.
+- **Remediation gate** — The hat is the agent persona that gates
+  the publish-day runbook. A human operator wearing this hat is
+  the final gate; the hat does not auto-decide.
+
+Hat content MAY be authored as a `.claude/skills/hats/SKILL.md`
+catalog entry (the reference implementation's pattern). Other
+implementations MAY use other hat-discovery mechanisms; the
+contract is the operational scope above.
+
+### 16.6 A2A Signal Sharing
+
+Conforming Brains MAY share supply-chain findings with peer
+Brains via the A2A protocol (§13). A new A2A message type,
+`supply-chain-signal`, carries the finding payload defined in
+`a2a-supply-chain-signal-v1.schema.json` (§16.7).
+
+The consent model is **bidirectional opt-in**:
+
+- A Brain MUST declare `supply-chain-signal` in its Agent Card
+  (`agent-card-v1.schema.json`) `capabilities.accepts[]` to
+  receive supply-chain signals.
+- A Brain MUST declare `supply-chain-signal` in its Agent Card
+  `capabilities.emits[]` to send supply-chain signals.
+- A Brain MUST NOT send a `supply-chain-signal` to a peer whose
+  Agent Card does not declare `supply-chain-signal` in
+  `accepts[]`.
+- Implementations SHOULD additionally require operator
+  acknowledgement that both peers are trusted as supply-chain-
+  signal correspondents before signals flow. The exact
+  mechanism is implementation-defined.
+
+This is a **tighter** consent model than the existing one-
+direction-by-Agent-Card-declaration default for other A2A message
+types. Rationale:
+
+1. **Legal exposure** — Supply-chain findings name specific
+   packages and frequently specific maintainer behavior.
+   Auto-broadcasting findings to peers creates defamation and
+   tortious-interference risk that one-direction consent does not
+   adequately mitigate.
+2. **False-positive multiplication** — A single false-positive
+   that auto-propagates to peer Brains becomes a multiplied false
+   positive. Bidirectional opt-in keeps the false-positive blast
+   radius bounded.
+3. **Conservative posture** — v2.6 takes the conservative
+   position. v2.7+ MAY relax to one-direction consent if real
+   demand surfaces and the risk profile is shown to be
+   manageable.
+
+A Brain receiving a `supply-chain-signal` from a peer MUST treat
+it as advisory input. Implementations SHOULD aggregate signals
+across peers (e.g., "two independent peers flagged this package")
+to produce a `cross_brain_count` field; aggregation rules are
+implementation-defined in v2.6 and a candidate for normative
+specification in v2.7+.
+
+### 16.7 Schemas
+
+Two new normative schemas land with v2.6:
+
+- **`supply-chain-decision-ledger-v1.schema.json`** — Append-only
+  JSONL ledger for Layer 3 decisions. Five entry kinds (`accept`,
+  `reject`, `pin-to-last-good`, `review-pending`,
+  `review-triaged`). Discriminated by `entry_kind`. Mirrors the
+  shape established by `domain-promotion-ledger-v1.schema.json`
+  (§15.5). `additionalProperties: false` at every level.
+- **`a2a-supply-chain-signal-v1.schema.json`** — Payload shape for
+  the new `supply-chain-signal` A2A message type (§16.6).
+  Required fields: `advisory_id`, `package` (with `name` +
+  `ecosystem` + `version`), `severity_class`,
+  `discovery_source`, `peer_brain_id`. Optional aggregation
+  fields: `cross_brain_count`, `legal_disclaimer`.
+  `additionalProperties: false`.
+
+The existing `a2a-envelope-v1.schema.json` and
+`agent-card-v1.schema.json` schemas extend their `message_type` /
+`capabilities.accepts[]` / `capabilities.emits[]` enums to include
+`supply-chain-signal` as an additive change. These extensions are
+non-breaking — peers that do not understand the new value continue
+to validate their other messages correctly.
+
+### 16.8 Versioning + Extensibility
+
+The new schemas use `additionalProperties: false` per the
+ecosystem's existing pattern (§6.5). Additive changes (e.g., a
+new `entry_kind` for the decision ledger, a new
+`severity_class` value) bump the schema version (v1 → v2) and
+require migration tooling. Implementations MUST validate
+incoming ledger entries against the declared `schema_version`
+field; entries with unknown schema versions MUST be rejected with
+a recoverable error (not silently ignored).
+
+The v2.6 schemas are intentionally narrow. They cover the v1
+implementation experience captured in METHODOLOGY-EVOLUTION §15.
+Future additive changes — severity-weighted scoring (§16.2),
+cross-Brain aggregation rules (§16.6), execution-isolated agent
+review (§16.4) — are candidate v2.7+ work.
+
+### 16.9 Reference Implementation
+
+The reference implementation (NeuroGrim) ships:
+
+- **Layer 1** — A native-Rust SCA sensor at
+  `neurogrim-sensory/src/supply_chain_sca/`. Three ecosystems as
+  of 2026-04-25: Rust (`Cargo.lock`), Python (`uv.lock` +
+  `requirements*.txt`), Node (`package-lock.json` v2/v3 +
+  `yarn.lock` Classic + Berry + `pnpm-lock.yaml` v6/v9). Direct
+  OSV.dev queries with file-backed 24h cache; pinned RustSec
+  advisory-db submodule for OSV-miss coverage and offline
+  capability; operator-curated accepted-advisories TOML with
+  required-`note` hygiene lever; count-based scoring rubric
+  (0/1/2/3/4+ unaccepted → 100/75/50/25/0). Operator guide:
+  `NeuroGrim/docs/supply-chain-sca.md`.
+- **Layers 2 + 3** — Reference implementation tracked as
+  NeuroGrim epic E-SC-5 (vigilance) and E-SC-6 (agent-assisted
+  review). The §16 contract is normative now; reference-
+  implementation work proceeds via those epics.
+- **Operational scaffolding** — `audit/ROLLBACK-PLAYBOOK.md`
+  (sensor-specific recovery procedures, populated epic-by-epic);
+  `audit/TOOL-TRUST-NOTES.md` (running record of trust
+  observations); `BEFORE-PUBLIC-RELEASE.md § Gate 11` (master
+  publish gate forbidding `cargo publish` until Layer 1 is green
+  on NeuroGrim's own dependency graph).
+
+See METHODOLOGY-EVOLUTION §15 for the broader rationale, the
+LiteLLM 2026-04-23 motivating incident, and the spec-impl-alignment
+observation that surfaced during this epic (the first time the
+reference implementation shipped a normative protocol-shape
+feature ahead of the spec, and the bounded conditions under which
+that ordering is acceptable).
+
+---
+
 ## Appendix A: Agent Output Schema
 
 > **Canonical location:** `schemas/agent-output-v1.schema.json`
@@ -1975,7 +2375,9 @@ mapping is language-agnostic — implementations choose their own file structure
 |------|-----------|
 | **A2A** | Agent2Agent Protocol. Open specification (Linux Foundation) for peer-to-peer agent communication via tasks, messages, and Agent Cards. Used by LSP Brains for Brain-to-Brain peer communication (fractal composition, dual brain). Distinct from MCP, which is a tool-call protocol. |
 | **A2A (Agent2Agent) Protocol** | Full name of the **A2A** protocol — see the **A2A** entry above. |
-| **A2A Message** | A single payload exchanged between peer Brains, wrapped in an envelope (`a2a-envelope-v1.schema.json`). One of 10 canonical types: score.updated, gate.changed, ecosystem.scored, incident.detected, incident.resolved, snapshot.requested, snapshot.delivered, proposal.created, proposal.resolved, config.changed. |
+| **A2A Message** | A single payload exchanged between peer Brains, wrapped in an envelope (`a2a-envelope-v1.schema.json`). Canonical types as of v2.6: score.updated, gate.changed, ecosystem.scored, incident.detected, incident.resolved, snapshot.requested, snapshot.delivered, proposal.created, proposal.resolved, config.changed, supply-chain-signal (v2.6, bidirectional opt-in — §16.6). |
+| **Accepted-advisories file** | Operator-curated list (e.g., `.claude/supply-chain-accepted-advisories.toml`) recording supply-chain advisories accepted as not-currently-actionable. Each entry MUST have a non-empty `note` field documenting WHY (the hygiene lever; silent acceptance is the failure mode the file exists to prevent). See §16.2. |
+| **Bidirectional opt-in** | Tighter consent model used for `supply-chain-signal` (v2.6). Both peers MUST declare the message type in their Agent Card `accepts[]` before signals flow — a stronger requirement than the one-direction-by-declaration default of other A2A types. Motivated by legal-exposure and false-positive-multiplication concerns. See §16.6. |
 | **Action type** | A categorized operation (e.g., "clear-gate", "deploy") with a default autonomy level and blast radius. |
 | **Advisory domain** | A domain with weight 0.00 that contributes information but not to the unified score. |
 | **Agent Card** | A JSON document (`agent-card-v1.schema.json`) published by a Brain at `/.well-known/agent-card.json`. Declares identity, capabilities (which A2A message types accepted/emitted), transport, and authentication. Consumed by peer Brains to discover and invoke this Brain. |
@@ -2004,6 +2406,13 @@ mapping is language-agnostic — implementations choose their own file structure
 | **Peer Brain** | Another Brain with which this Brain communicates via A2A. In fractal composition (§9): parent/child. In dual brain (§10): local/external. |
 | **Persona** | A human user role that controls output verbosity and field filtering. |
 | **Registry** | The `brain-registry.json` file containing all Brain configuration. Source truth. |
+| **Scanner-chain compromise** | Attack class where the security scanner binary itself is the attack vector (e.g., the LiteLLM 2026-04-23 incident, where a trojanized Trivy release exfiltrated CI tokens). The structural mitigation in v2.6+ is the §16.2 prohibition on shelling out to external scanner binaries in the primary scoring path. See METHODOLOGY-EVOLUTION §15. |
+| **Supply-chain awareness** | First-class Brain concern (v2.6). Three composing layers: Layer 1 mechanical SCA, Layer 2 deep-signal vigilance, Layer 3 agent-assisted human review. See §16. |
+| **supply-chain-auditor hat** | Scoped agent persona for package-level review (provenance verification, unreviewed-dep audit, remediation gate). Required by §16.5; content is implementation-defined per §5.4. |
+| **supply-chain-sca** | Layer 1 mechanical-SCA domain (§16.2). Lockfile parsing + vulnerability-database query; default weight 0.0 in v1 (advisory). Reference implementation is NeuroGrim's `supply_chain_sca/` module. |
+| **supply-chain-signal** | A2A message type (v2.6) carrying supply-chain findings between peer Brains under bidirectional opt-in consent. Payload conforms to `a2a-supply-chain-signal-v1.schema.json`. See §16.6. |
+| **supply-chain-vigilance** | Layer 2 deep-signal-vigilance domain (§16.3). Probabilistic findings on publishing behavior; default weight 0.0 in v1 (advisory). |
+| **supply-chain decision ledger** | Append-only `supply-chain-decision-ledger.jsonl` matching `supply-chain-decision-ledger-v1.schema.json`. Records Layer 3 review decisions (accept / reject / pin-to-last-good / review-pending / review-triaged) with operator identity + rationale. See §16.4 + §16.7. |
 | **Runtime** | One of three truth layers (§2.2). Snapshots of external system state — CMDB files written by sensory tools. Accurate at capture time, decays with age via confidence decay (§4.4). |
 | **Safety invariant** | A rule that cannot be overridden by confidence or effectiveness -- e.g., "destroy is always blocked". |
 | **Sensory tool** | A script or program that observes external state and writes a CMDB file. "Sensory tools" (plural) refers to the set of all such tools a Brain consumes. |
@@ -2228,6 +2637,7 @@ To serve as a peer Brain:
 | `proposal.created` | Proposal object from the learning ledger (Section 12) |
 | `proposal.resolved` | `{proposal_id, pre_score, post_score, action_types[]}` |
 | `config.changed` | `{registry_path, changed_sections[], committed_at}` |
+| `supply-chain-signal` | Payload conforms to `a2a-supply-chain-signal-v1.schema.json` (§16.6, §16.7). Bidirectional opt-in: both peers MUST declare the type in their Agent Card `accepts[]` before signals flow. |
 
 Implementations MAY extend payloads with additional fields; conformance requires the
 fields listed above.

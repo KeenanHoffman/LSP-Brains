@@ -1,40 +1,130 @@
 {
   "meta": {
     "updated_by": "check-glossary-freshness",
-    "updated_at": "2026-04-17T19:26:58.445813Z",
+    "updated_at": "2026-04-25T21:17:22.508369Z",
     "source": "scan of spec prose for **bold** terms vs Appendix E glossary rows",
     "schema_version": "1"
   },
-  "score": 100,
-  "updated_at": "2026-04-17T19:26:58.445813Z",
+  "score": 37,
+  "updated_at": "2026-04-25T21:17:22.508369Z",
   "findings": [
     {
       "name": "finding-000",
       "status": "info",
       "points": 0,
-      "detail": "Bold terms introduced in body: 18"
+      "detail": "Bold terms introduced in body: 29"
     },
     {
       "name": "finding-001",
       "status": "info",
       "points": 0,
-      "detail": "Glossary entries in Appendix E: 44"
+      "detail": "Glossary entries in Appendix E: 53"
     },
     {
       "name": "finding-002",
-      "status": "info",
+      "status": "warning",
       "points": 0,
-      "detail": "Introduced but undefined: 0"
+      "detail": "Introduced but undefined: 11"
     },
     {
       "name": "finding-003",
       "status": "info",
       "points": 0,
-      "detail": "Orphan glossary entries (not referenced in body): 0"
+      "detail": "Orphan glossary entries (not referenced in body): 4"
+    },
+    {
+      "name": "finding-004",
+      "status": "warning",
+      "points": 0,
+      "detail": "  missing: **Audit failure handling.**"
+    },
+    {
+      "name": "finding-005",
+      "status": "warning",
+      "points": 0,
+      "detail": "  missing: **Cadence obligation.**"
+    },
+    {
+      "name": "finding-006",
+      "status": "warning",
+      "points": 0,
+      "detail": "  missing: **Calibration.**"
+    },
+    {
+      "name": "finding-007",
+      "status": "warning",
+      "points": 0,
+      "detail": "  missing: **Delta tracking.**"
+    },
+    {
+      "name": "finding-008",
+      "status": "warning",
+      "points": 0,
+      "detail": "  missing: **Multi-judge consensus.**"
+    },
+    {
+      "name": "finding-009",
+      "status": "warning",
+      "points": 0,
+      "detail": "  missing: **Promotion path.**"
+    },
+    {
+      "name": "finding-010",
+      "status": "warning",
+      "points": 0,
+      "detail": "  missing: **Proposals.**"
+    },
+    {
+      "name": "finding-011",
+      "status": "warning",
+      "points": 0,
+      "detail": "  missing: **Red samples.**"
+    },
+    {
+      "name": "finding-012",
+      "status": "warning",
+      "points": 0,
+      "detail": "  missing: **Runs MUST account for token cost.**"
+    },
+    {
+      "name": "finding-013",
+      "status": "warning",
+      "points": 0,
+      "detail": "  missing: **S7-ABV**"
+    },
+    {
+      "name": "finding-014",
+      "status": "warning",
+      "points": 0,
+      "detail": "  missing: **Safety rail.**"
+    },
+    {
+      "name": "finding-015",
+      "status": "info",
+      "points": 0,
+      "detail": "  orphan: **supply-chain decision ledger**"
+    },
+    {
+      "name": "finding-016",
+      "status": "info",
+      "points": 0,
+      "detail": "  orphan: **supply-chain-sca**"
+    },
+    {
+      "name": "finding-017",
+      "status": "info",
+      "points": 0,
+      "detail": "  orphan: **supply-chain-signal**"
+    },
+    {
+      "name": "finding-018",
+      "status": "info",
+      "points": 0,
+      "detail": "  orphan: **supply-chain-vigilance**"
     }
   ],
   "exported_variables": {
-    "glossary:missing_count": 0,
-    "glossary:orphan_count": 0
+    "glossary:missing_count": 11,
+    "glossary:orphan_count": 4
   }
 }

@@ -1,36 +1,36 @@
 {
   "meta": {
     "updated_by": "check-rfc-2119-compliance",
-    "updated_at": "2026-04-17T19:15:24.618977Z",
+    "updated_at": "2026-04-25T21:17:24.039817Z",
     "source": "scan of spec numbered sections for lowercase will/should/must vs RFC 2119 uppercase usage",
     "schema_version": "1"
   },
-  "score": 97,
-  "updated_at": "2026-04-17T19:15:24.618977Z",
+  "score": 95,
+  "updated_at": "2026-04-25T21:17:24.039817Z",
   "findings": [
     {
       "name": "finding-000",
       "status": "info",
       "points": 0,
-      "detail": "MUST occurrences: 132"
+      "detail": "MUST occurrences: 186"
     },
     {
       "name": "finding-001",
       "status": "info",
       "points": 0,
-      "detail": "SHOULD occurrences: 44"
+      "detail": "SHOULD occurrences: 68"
     },
     {
       "name": "finding-002",
       "status": "info",
       "points": 0,
-      "detail": "MAY occurrences: 19"
+      "detail": "MAY occurrences: 39"
     },
     {
       "name": "finding-003",
       "status": "warning",
       "points": 0,
-      "detail": "Ambiguous-normative (lowercase will/should/must in numbered sections): 3"
+      "detail": "Ambiguous-normative (lowercase will/should/must in numbered sections): 5"
     },
     {
       "name": "finding-004",
@@ -49,12 +49,24 @@
       "status": "info",
       "points": 0,
       "detail": "  \u00a73.8: 'must' in: methodology nonetheless strongly encourages the feedback loop: the observing layer must"
+    },
+    {
+      "name": "finding-007",
+      "status": "info",
+      "points": 0,
+      "detail": "  \u00a715.1: 'must' in: The observing layer must itself be observable (VISION principle #18: \"sensors need"
+    },
+    {
+      "name": "finding-008",
+      "status": "info",
+      "points": 0,
+      "detail": "  \u00a715.1: 'must' in: sensors\"); the agents running the sensors must themselves be scorable (VISION"
     }
   ],
   "exported_variables": {
-    "rfc2119:ambiguous_count": 3,
-    "rfc2119:must_count": 132,
-    "rfc2119:should_count": 44,
-    "rfc2119:may_count": 19
+    "rfc2119:ambiguous_count": 5,
+    "rfc2119:must_count": 186,
+    "rfc2119:should_count": 68,
+    "rfc2119:may_count": 39
   }
 }

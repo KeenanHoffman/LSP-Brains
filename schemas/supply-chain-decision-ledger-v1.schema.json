@@ -1,0 +1,337 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/KeenanHoffman/LSP-Brains/schemas/supply-chain-decision-ledger-v1.schema.json",
+  "title": "Supply-chain Decision Ledger v1",
+  "description": "Append-only JSONL ledger recording Layer 3 supply-chain review decisions (spec §16.4, v2.6 — E-SC-7). Five entry kinds: `accept` (operator accepts a flagged dep as not-currently-actionable), `reject` (operator rejects the dep; remediation required), `pin-to-last-good` (operator pins to a known-good version pending upstream fix), `review-pending` (a review ticket has been opened but no human decision yet), `review-triaged` (a previously-pending review has been resolved; supersedes the pending entry).\n\nEach line in the JSONL file is one entry. Readers reconstruct decision state by folding the stream chronologically; `review-triaged` entries supersede their `review-pending` predecessors via the `supersedes_ts` reference. Writes happen via the implementation's review CLI; the writer enforces schema compliance + operator-identity discipline. Never edit entries in place — corrections are new entries superseding old ones (append-only discipline; same shape as `domain-promotion-ledger-v1.schema.json`).\n\nLanguage discipline: findings published outside the Brain (e.g., shared via §16.6 A2A signal) MUST use non-attributive language per §16.4. The `human_notes` and `agent_findings` fields are operator-internal; non-attributive language is RECOMMENDED but not required for internal-only fields. The `legal_disclaimer` field on the A2A envelope is the forcing function for external sharing.",
+  "type": "object",
+  "oneOf": [
+    { "$ref": "#/definitions/AcceptEntry" },
+    { "$ref": "#/definitions/RejectEntry" },
+    { "$ref": "#/definitions/PinToLastGoodEntry" },
+    { "$ref": "#/definitions/ReviewPendingEntry" },
+    { "$ref": "#/definitions/ReviewTriagedEntry" }
+  ],
+  "definitions": {
+    "PackageRef": {
+      "type": "object",
+      "required": ["name", "ecosystem"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Package name as it appears in its registry (e.g., 'litellm', 'serde', '@scope/pkg')."
+        },
+        "ecosystem": {
+          "type": "string",
+          "description": "Ecosystem identifier. Conventional values match OSV.dev's ecosystem strings ('crates.io', 'PyPI', 'npm', 'Go', 'Maven', 'RubyGems', 'NuGet', etc.). Implementations MAY use additional values for ecosystems not yet covered by OSV.dev."
+        },
+        "version_range": {
+          "type": "string",
+          "description": "Optional version range affected (e.g., '>=1.82.7,<1.82.9' or 'all'). Implementation-defined format; semver-style ranges RECOMMENDED."
+        }
+      },
+      "additionalProperties": false
+    },
+    "TriggeringSignal": {
+      "type": "object",
+      "required": ["layer", "signal_kind"],
+      "properties": {
+        "layer": {
+          "type": "string",
+          "enum": ["1", "2", "3"],
+          "description": "Which §16 layer surfaced this signal. 1 = mechanical SCA (advisory match). 2 = vigilance (deep-signal heuristic). 3 = agent-assisted review (LLM-judge finding)."
+        },
+        "signal_kind": {
+          "type": "string",
+          "description": "Implementation-defined identifier for the specific signal (e.g., 'osv-advisory:RUSTSEC-2024-0436', 'vigilance:publish-cadence-spike', 'agent:exfil-indicator')."
+        },
+        "advisory_id": {
+          "type": "string",
+          "description": "If applicable, the canonical advisory identifier (CVE-YYYY-NNNNN, RUSTSEC-YYYY-NNNN, GHSA-xxxx-xxxx-xxxx, etc.)."
+        },
+        "source_uri": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional pointer to the original signal source (advisory page, CMDB finding, agent-review report)."
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Confidence in [0, 1]. Layer 1 signals SHOULD report 1.0 (exact-match advisory). Layer 2/3 signals are probabilistic."
+        }
+      },
+      "additionalProperties": false
+    },
+    "AgentFinding": {
+      "type": "object",
+      "required": ["finding_kind", "summary"],
+      "properties": {
+        "finding_kind": {
+          "type": "string",
+          "description": "Machine-tag classification of the agent's finding (e.g., 'static:base64-payload', 'static:eval-introduced', 'static:network-endpoint-added', 'meta:maintainer-rotation', 'recommendation:pin-to-last-good')."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Short prose summary of the finding (one sentence). Non-attributive language RECOMMENDED."
+        },
+        "evidence_uri": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional pointer to the evidence (file path, URL to a diff, etc.)."
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Agent's self-reported confidence in [0, 1]. Operators SHOULD treat <0.7 as inconclusive."
+        }
+      },
+      "additionalProperties": false
+    },
+    "BaseEntry": {
+      "type": "object",
+      "properties": {
+        "ts": {
+          "type": "number",
+          "description": "Unix seconds with fractional precision."
+        },
+        "schema_version": { "type": "string", "const": "1" },
+        "package": { "$ref": "#/definitions/PackageRef" },
+        "from_version": {
+          "type": "string",
+          "description": "The currently-installed (or proposed) version that triggered the review."
+        },
+        "to_version": {
+          "type": "string",
+          "description": "The version the operator decision targets (for accept/pin-to-last-good entries)."
+        },
+        "triggering_signals": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/TriggeringSignal" },
+          "description": "All Layer 1 + Layer 2 + Layer 3 signals that motivated this decision. Empty array indicates a manual operator entry without sensor signals."
+        },
+        "agent_findings": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/AgentFinding" },
+          "description": "Layer 3 agent's findings, if a review was performed. Empty for accept/reject decisions made without agent involvement."
+        },
+        "human_operator": {
+          "type": "string",
+          "description": "Operator handle. Self-asserted in v1 (e.g., from environment variable). Implementations MAY use cryptographic identity in future versions."
+        },
+        "human_notes": {
+          "type": "string",
+          "description": "Free-text rationale from the operator. Forces the decision to be auditable in 18 months when the operator who made it has rotated off the project."
+        },
+        "audit_reports": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Optional paths to supporting audit reports (CMDB snapshot, agent-review report, calibration evidence, etc.)."
+        }
+      }
+    },
+    "AcceptEntry": {
+      "allOf": [{ "$ref": "#/definitions/BaseEntry" }],
+      "type": "object",
+      "required": ["ts", "entry_kind", "package", "human_operator", "human_notes", "schema_version"],
+      "properties": {
+        "ts": { "type": "number" },
+        "entry_kind": { "type": "string", "const": "accept" },
+        "schema_version": { "type": "string", "const": "1" },
+        "package": { "$ref": "#/definitions/PackageRef" },
+        "from_version": { "type": "string" },
+        "to_version": { "type": "string" },
+        "triggering_signals": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/TriggeringSignal" }
+        },
+        "agent_findings": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/AgentFinding" }
+        },
+        "human_operator": { "type": "string" },
+        "human_notes": {
+          "type": "string",
+          "minLength": 1,
+          "description": "REQUIRED for `accept`. Documents WHY the dep was accepted as not-currently-actionable. Hygiene lever: silent acceptance is the failure mode this entry kind exists to prevent."
+        },
+        "audit_reports": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date",
+          "description": "Optional ISO-8601 date. After this date, the acceptance is considered stale and the operator MUST re-review. Implementations SHOULD surface stale acceptances in their CMDB output."
+        }
+      },
+      "additionalProperties": false
+    },
+    "RejectEntry": {
+      "allOf": [{ "$ref": "#/definitions/BaseEntry" }],
+      "type": "object",
+      "required": ["ts", "entry_kind", "package", "human_operator", "human_notes", "schema_version"],
+      "properties": {
+        "ts": { "type": "number" },
+        "entry_kind": { "type": "string", "const": "reject" },
+        "schema_version": { "type": "string", "const": "1" },
+        "package": { "$ref": "#/definitions/PackageRef" },
+        "from_version": { "type": "string" },
+        "to_version": { "type": "string" },
+        "triggering_signals": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/TriggeringSignal" }
+        },
+        "agent_findings": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/AgentFinding" }
+        },
+        "human_operator": { "type": "string" },
+        "human_notes": {
+          "type": "string",
+          "minLength": 1,
+          "description": "REQUIRED for `reject`. Documents the rejection rationale and the remediation path (e.g., 'replace with X', 'fork and inline-vendor pending upstream fix', 'remove dep entirely')."
+        },
+        "audit_reports": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "remediation_action": {
+          "type": "string",
+          "enum": ["replace", "fork-inline-vendor", "remove", "downgrade", "other"],
+          "description": "Optional structured remediation classification."
+        }
+      },
+      "additionalProperties": false
+    },
+    "PinToLastGoodEntry": {
+      "allOf": [{ "$ref": "#/definitions/BaseEntry" }],
+      "type": "object",
+      "required": ["ts", "entry_kind", "package", "from_version", "to_version", "human_operator", "human_notes", "schema_version"],
+      "properties": {
+        "ts": { "type": "number" },
+        "entry_kind": { "type": "string", "const": "pin-to-last-good" },
+        "schema_version": { "type": "string", "const": "1" },
+        "package": { "$ref": "#/definitions/PackageRef" },
+        "from_version": {
+          "type": "string",
+          "description": "REQUIRED for `pin-to-last-good`. The currently-installed (compromised or suspect) version."
+        },
+        "to_version": {
+          "type": "string",
+          "description": "REQUIRED for `pin-to-last-good`. The known-good version the dep is being pinned to."
+        },
+        "triggering_signals": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/TriggeringSignal" }
+        },
+        "agent_findings": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/AgentFinding" }
+        },
+        "human_operator": { "type": "string" },
+        "human_notes": {
+          "type": "string",
+          "minLength": 1,
+          "description": "REQUIRED for `pin-to-last-good`. Documents the rationale (e.g., 'upstream fix pending; pin to last known-good 1.82.6 until 1.82.10 or later ships and is reviewed')."
+        },
+        "audit_reports": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date",
+          "description": "Optional ISO-8601 date. After this date, the pin is considered stale and the operator MUST re-review (e.g., to confirm the upstream fix has shipped)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ReviewPendingEntry": {
+      "allOf": [{ "$ref": "#/definitions/BaseEntry" }],
+      "type": "object",
+      "required": ["ts", "entry_kind", "package", "triggering_signals", "schema_version"],
+      "properties": {
+        "ts": { "type": "number" },
+        "entry_kind": { "type": "string", "const": "review-pending" },
+        "schema_version": { "type": "string", "const": "1" },
+        "package": { "$ref": "#/definitions/PackageRef" },
+        "from_version": { "type": "string" },
+        "to_version": { "type": "string" },
+        "triggering_signals": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/TriggeringSignal" },
+          "description": "REQUIRED, non-empty for `review-pending`. The signals that motivated opening the review ticket."
+        },
+        "agent_findings": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/AgentFinding" },
+          "description": "Optional agent findings produced when the ticket was opened."
+        },
+        "human_operator": {
+          "type": "string",
+          "description": "Operator who opened the ticket (MAY be the system itself for auto-opened tickets)."
+        },
+        "human_notes": {
+          "type": "string",
+          "description": "Optional initial notes from the operator opening the ticket."
+        },
+        "audit_reports": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "review_ticket_id": {
+          "type": "string",
+          "description": "Implementation-defined ticket identifier (e.g., a path under `.claude/brain/supply-chain-tickets/`)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ReviewTriagedEntry": {
+      "allOf": [{ "$ref": "#/definitions/BaseEntry" }],
+      "type": "object",
+      "required": ["ts", "entry_kind", "package", "supersedes_ts", "resolution", "human_operator", "human_notes", "schema_version"],
+      "properties": {
+        "ts": { "type": "number" },
+        "entry_kind": { "type": "string", "const": "review-triaged" },
+        "schema_version": { "type": "string", "const": "1" },
+        "package": { "$ref": "#/definitions/PackageRef" },
+        "from_version": { "type": "string" },
+        "to_version": { "type": "string" },
+        "supersedes_ts": {
+          "type": "number",
+          "description": "REQUIRED. The `ts` of the `review-pending` entry being resolved. Append-only supersede pattern (same as `domain-promotion-ledger-v1.schema.json`'s rollback)."
+        },
+        "resolution": {
+          "type": "string",
+          "enum": ["accept", "reject", "pin-to-last-good", "no-action"],
+          "description": "REQUIRED. The decision the operator reached. `no-action` indicates the operator reviewed and decided no action was warranted (e.g., signal turned out to be a false positive)."
+        },
+        "triggering_signals": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/TriggeringSignal" }
+        },
+        "agent_findings": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/AgentFinding" }
+        },
+        "human_operator": { "type": "string" },
+        "human_notes": {
+          "type": "string",
+          "minLength": 1,
+          "description": "REQUIRED for `review-triaged`. Documents the resolution rationale; this is the auditable record of why the review reached its conclusion."
+        },
+        "audit_reports": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "review_ticket_id": {
+          "type": "string",
+          "description": "If the original `review-pending` carried a ticket id, the same id SHOULD be repeated here for cross-reference."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -35,7 +35,7 @@
       "properties": {
         "accepts": {
           "type": "array",
-          "description": "Message types this Brain can receive and act on.",
+          "description": "Message types this Brain can receive and act on. Note: `supply-chain-signal` (added v2.6) is governed by a bidirectional opt-in consent model — both peers MUST declare it in `accepts[]` before signals flow (spec §16.6).",
           "items": {
             "type": "string",
             "enum": [
@@ -48,13 +48,14 @@
               "snapshot.delivered",
               "proposal.created",
               "proposal.resolved",
-              "config.changed"
+              "config.changed",
+              "supply-chain-signal"
             ]
           }
         },
         "emits": {
           "type": "array",
-          "description": "Message types this Brain produces.",
+          "description": "Message types this Brain produces. Note: `supply-chain-signal` (added v2.6) requires bidirectional opt-in — see `accepts[]`.",
           "items": {
             "type": "string",
             "enum": [
@@ -67,7 +68,8 @@
               "snapshot.delivered",
               "proposal.created",
               "proposal.resolved",
-              "config.changed"
+              "config.changed",
+              "supply-chain-signal"
             ]
           }
         },
