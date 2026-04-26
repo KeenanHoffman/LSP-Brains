@@ -10,15 +10,18 @@
   "data_sources": {},
   "config": {
     "domain_weights": {
-      "spec-completeness":    0.0,
-      "schema-validity":      0.0,
-      "link-integrity":       0.0,
-      "glossary-freshness":   0.0,
-      "diagram-sync":         0.0,
-      "rfc-2119-compliance":  0.0,
-      "changelog-hygiene":    0.0,
-      "skill-coherence":      0.0,
-      "capability-hygiene":   0.0
+      "spec-completeness":      0.0,
+      "schema-validity":        0.0,
+      "link-integrity":         0.0,
+      "glossary-freshness":     0.0,
+      "diagram-sync":           0.0,
+      "rfc-2119-compliance":    0.0,
+      "changelog-hygiene":      0.0,
+      "skill-coherence":        0.0,
+      "capability-hygiene":     0.0,
+      "supply-chain-sca":       0.0,
+      "supply-chain-vigilance": 0.0,
+      "supply-chain-review":    0.0
     },
     "advisory_domains": [
       "spec-completeness",
@@ -29,18 +32,24 @@
       "rfc-2119-compliance",
       "changelog-hygiene",
       "skill-coherence",
-      "capability-hygiene"
+      "capability-hygiene",
+      "supply-chain-sca",
+      "supply-chain-vigilance",
+      "supply-chain-review"
     ],
     "principle_map": {
-      "spec-completeness":   "Spec Completeness",
-      "schema-validity":     "Schema Validity",
-      "link-integrity":      "Link Integrity",
-      "glossary-freshness":  "Glossary Freshness",
-      "diagram-sync":        "Diagram Sync",
-      "rfc-2119-compliance": "RFC 2119 Compliance",
-      "changelog-hygiene":   "Changelog Hygiene",
-      "skill-coherence":     "Skill Coherence",
-      "capability-hygiene":  "Capability Hygiene"
+      "spec-completeness":      "Spec Completeness",
+      "schema-validity":        "Schema Validity",
+      "link-integrity":         "Link Integrity",
+      "glossary-freshness":     "Glossary Freshness",
+      "diagram-sync":           "Diagram Sync",
+      "rfc-2119-compliance":    "RFC 2119 Compliance",
+      "changelog-hygiene":      "Changelog Hygiene",
+      "skill-coherence":        "Skill Coherence",
+      "capability-hygiene":     "Capability Hygiene",
+      "supply-chain-sca":       "Supply-Chain SCA (Layer 1)",
+      "supply-chain-vigilance": "Supply-Chain Vigilance (Layer 2)",
+      "supply-chain-review":    "Supply-Chain Review (Layer 3)"
     },
     "domain_definitions": {
       "_doc": "All domains read CMDB stubs until sensory tools land. Placeholder scores at 0 reflect unknown state; per spec principle #2 (scoring must be honest), unknown is not good.",
@@ -111,6 +120,27 @@
           "capability-hygiene:under_described_count":     { "field": "under_described_count",     "type": "number" },
           "capability-hygiene:missing_when_to_use_count": { "field": "missing_when_to_use_count", "type": "number" },
           "capability-hygiene:over_budget_count":         { "field": "over_budget_count",         "type": "number" }
+        }
+      },
+      "supply-chain-sca": {
+        "_doc": "E-SC-10 (2026-04-26): supply-chain awareness Layer 1 (mechanical SCA) per LSP-Brains v2.6 §16.2. **This is a spec repo with no Cargo.lock or runtime pyproject.toml at root** — the sensory/ directory contains example-scoped Python tools, not runtime deps. Sensor reports `sensor_status: lockfile_unreadable` + score 0; advisory weight 0.0 means this doesn't affect the unified score. Domain registered for cross-ecosystem symmetry + visibility into the spec repo's supply-chain posture (which is: no runtime supply-chain surface). Refresh: `neurogrim sensory supply-chain-sca --project-root D:/Brains/LSP-Brains/ > .claude/supply-chain-sca-cmdb.json`. The sensor is implemented in NeuroGrim per spec §16.9; this Brain consumes its CMDB output.",
+        "scoring_source": {
+          "type": "cmdb",
+          "path": ".claude/supply-chain-sca-cmdb.json"
+        }
+      },
+      "supply-chain-vigilance": {
+        "_doc": "E-SC-10 (2026-04-26): supply-chain Layer 2 (deep-signal vigilance) per LSP-Brains v2.6 §16.3. Same no-deps reality as supply-chain-sca above; the seven sub-sensors have nothing to scan. Domain registered for symmetry. Refresh: `neurogrim sensory supply-chain-vigilance --project-root D:/Brains/LSP-Brains/ > .claude/supply-chain-vigilance-cmdb.json`.",
+        "scoring_source": {
+          "type": "cmdb",
+          "path": ".claude/supply-chain-vigilance-cmdb.json"
+        }
+      },
+      "supply-chain-review": {
+        "_doc": "E-SC-10 (2026-04-26): supply-chain Layer 3 (agent-assisted human review framework) per LSP-Brains v2.6 §16.4. With no L1/L2 findings to triage, no review tickets are created. Score 100 (zero open tickets) is the steady state. Domain registered for symmetry + as the home for any operator-initiated tickets about the spec repo's tooling deps. Refresh: `neurogrim sensory supply-chain-review --project-root D:/Brains/LSP-Brains/ > .claude/supply-chain-review-cmdb.json`.",
+        "scoring_source": {
+          "type": "cmdb",
+          "path": ".claude/supply-chain-review-cmdb.json"
         }
       }
     },
