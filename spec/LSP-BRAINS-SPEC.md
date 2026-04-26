@@ -2157,11 +2157,17 @@ Two new normative schemas land with v2.6:
   (§15.5). `additionalProperties: false` at every level.
 - **`a2a-supply-chain-signal-v1.schema.json`** — Payload shape for
   the new `supply-chain-signal` A2A message type (§16.6).
-  Required fields: `advisory_id`, `package` (with `name` +
-  `ecosystem` + `version`), `severity_class`,
-  `discovery_source`, `peer_brain_id`. Optional aggregation
-  fields: `cross_brain_count`, `legal_disclaimer`.
-  `additionalProperties: false`.
+  Required fields: `package` (an object with required `name`,
+  `ecosystem`, and `version` sub-fields), `severity_class`,
+  `discovery_source`, `peer_brain_id`, `schema_version`.
+  Optional fields: `advisory_id` (present for Layer 1 mechanical-
+  SCA signals carrying a registry advisory id; absent for
+  vigilance/agent-review signals that did not produce a
+  registry-tracked advisory), `cross_brain_count`,
+  `legal_disclaimer`, `discovered_at`, `advisory_uri`,
+  `summary`, `recommended_action`, `metadata`.
+  `additionalProperties: false` at the top level; the `metadata`
+  field is the operator-extension escape hatch.
 
 The existing `a2a-envelope-v1.schema.json` and
 `agent-card-v1.schema.json` schemas extend their `message_type` /

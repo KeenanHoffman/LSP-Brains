@@ -15,6 +15,7 @@
     "PackageRef": {
       "type": "object",
       "required": ["name", "ecosystem"],
+      "description": "Reference to a package in a registry. Note: PackageRef intentionally OMITS a singular `version` field — the specific version that triggered a decision lives on the entry itself as `from_version` / `to_version`. PackageRef supports range references via `version_range` (e.g., 'all versions of this package' for an `accept` covering future releases). This separation lets a single `pin-to-last-good` entry carry both the suspect `from_version` (e.g., '1.82.7') and the operator-target `to_version` (e.g., '1.82.6') while PackageRef remains the package-identity tuple. (Documented per the 2026-04-26 PRE-RELEASE B14 clarification.)",
       "properties": {
         "name": {
           "type": "string",
@@ -26,7 +27,7 @@
         },
         "version_range": {
           "type": "string",
-          "description": "Optional version range affected (e.g., '>=1.82.7,<1.82.9' or 'all'). Implementation-defined format; semver-style ranges RECOMMENDED."
+          "description": "Optional version range affected (e.g., '>=1.82.7,<1.82.9' or 'all'). Implementation-defined format; semver-style ranges RECOMMENDED. NOT the same as the entry-level `from_version` / `to_version` — those name the specific version triggering the decision, while this field names the broader set of versions an accept/reject decision may apply to."
         }
       },
       "additionalProperties": false
