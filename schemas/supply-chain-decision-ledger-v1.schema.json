@@ -250,7 +250,7 @@
     "ReviewPendingEntry": {
       "allOf": [{ "$ref": "#/definitions/BaseEntry" }],
       "type": "object",
-      "required": ["ts", "entry_kind", "package", "triggering_signals", "schema_version"],
+      "required": ["ts", "entry_kind", "package", "triggering_signals", "human_operator", "schema_version"],
       "properties": {
         "ts": { "type": "number" },
         "entry_kind": { "type": "string", "const": "review-pending" },
@@ -271,7 +271,8 @@
         },
         "human_operator": {
           "type": "string",
-          "description": "Operator who opened the ticket (MAY be the system itself for auto-opened tickets)."
+          "minLength": 1,
+          "description": "REQUIRED. Operator who opened the ticket. For system-opened tickets (e.g., the Layer 2 vigilance auto-create bridge), implementations MUST use the conventional value `'auto'` so the audit trail distinguishes system-opened from human-opened tickets. Per the 2026-04-26 PRE-RELEASE B10 fix: previously this field was optional with semantics 'MAY be the system itself for auto-opened tickets'; tightened to required because operator-identity discipline applies to every ledger entry kind (spec §16.4)."
         },
         "human_notes": {
           "type": "string",
