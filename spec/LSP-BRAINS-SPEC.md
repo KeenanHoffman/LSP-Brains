@@ -1,10 +1,48 @@
 # LSP Brains Specification
 
-**Version:** 2.9
+**Version:** 2.10
 **Date:** 2026-04-27
 **Status:** Active
 
 ### Changelog
+
+- **v2.10 (2026-04-27):** Trust budget primitive (Brains-2.0 E-B2-4).
+
+  Per-Brain `trust-budget.toml` (committed at repo root) declares the
+  third-party crate / shell-out / external-service surface as a
+  schema-typed contract conforming to `trust-budget-v1.schema.json`.
+  Closed-set vocabulary: 4-entry `ecosystem` enum (cargo, pypi, npm,
+  system); 4-entry `trust_posture` enum (api_only, official_registry,
+  operator_audited, vendor_attested) — same additive discipline as
+  §5.4.1 hat-contract tool names.
+
+  RFC 2119: `trust-budget.toml` is RECOMMENDED (SHOULD), not MUST.
+  Brains lacking the file remain conformant; sensor flags absence as
+  advisory finding only. Hard-gate elevation deferred to v2 per
+  BACKLOG B-23 — gated on calibration data, mirroring the §16.4
+  v1→v2 advisory-before-strict discipline.
+
+  Composes with §5.4.1 hat contracts: trust-budget reads
+  `forbidden_tools[]` + `network_targets.allowed[]` to surface per-hat
+  composition findings. v1 is static-only — runtime tool tracking
+  parallels §5.4.1 v2 runtime enforcement (also B-23).
+
+  Drift findings emit two distinct kinds:
+  `trust_budget:undeclared:*` (actual surface not in declaration)
+  and `trust_budget:overdeclared:*` (declaration not in actual
+  surface). Both advisory weight 0.0.
+
+  Out of scope at v1: transitive crate budgets (BR-3 mitigation —
+  flagging on Cargo.lock's 369 transitive deltas would saturate
+  signal-to-noise); `max_growth_per_release` prescriptive thresholds
+  (release-boundary semantics deferred); A2A trust-budget signal
+  types (parallel to E-B2-3's deferred hat-contract-signal). All
+  BACKLOG B-23.
+
+  Additive only — no v2.9 conformance claim invalidated. Reference
+  implementation: NeuroGrim crate `neurogrim-sensory::trust_budget`
+  (lands in E-B2-4 C3). Per-epic Layer-2 plan in
+  `~/.claude/plans/brains-2-0-e-b2-4-layer-2.md`.
 
 - **v2.9 (2026-04-27):** Two coordinated additions (Brains-2.0
   E-B2-3 + E-B2-5).
@@ -2535,7 +2573,89 @@ The existing `a2a-envelope-v1.schema.json` and
 non-breaking — peers that do not understand the new value continue
 to validate their other messages correctly.
 
-### 16.8 Versioning + Extensibility
+### 16.8 Trust Budget
+
+A Brain's trust surface — the set of declared third-party code,
+scripts, and external services it relies on — is a first-class
+supply-chain concern. The trust budget primitive (v2.10+) makes that
+surface auditable as a versioned, schema-typed declaration,
+complementing the runtime SCA findings of §16.2 with operator-stated
+intent.
+
+A `trust-budget.toml` file SHOULD be placed at each Brain's repo
+root (committed and code-reviewable, NOT under `.claude/` runtime
+state). The file conforms to `trust-budget-v1.schema.json` and
+declares three orthogonal surface types:
+
+- **`declared_crates[]`** — third-party packages the Brain
+  consumes. Direct dependencies only at v1; transitive
+  dependencies are out of scope (the workspace's transitive
+  closure alone exceeds 360 entries on the NeuroGrim reference
+  implementation; transitive expansion to that surface was
+  deferred to v2 per BACKLOG B-23 to avoid saturating advisory
+  signal-to-noise).
+- **`declared_shell_outs[]`** — script-invoked commands. Operator
+  declares the catalog by command name plus optional `script_paths[]`
+  for traceability.
+- **`declared_external_services[]`** — outbound network endpoints
+  by FQDN, with `purpose` prose and a `trust_posture` enum
+  classifying HOW the operator trusts the service.
+
+Each entry MAY carry a `seeded` boolean indicating the entry was
+operator-acknowledged at trust-budget bootstrap; sensors SHOULD use
+this to suppress first-run findings on operator-known surface.
+
+**Closed-set vocabulary.** The schema enforces two enums whose
+extensibility is governed by the same discipline as §5.4.1
+hat-contract tool names — additive only via spec change. v2.10
+vocabulary:
+
+- `ecosystem` ∈ {`cargo`, `pypi`, `npm`, `system`}. The first
+  three match the §16.2 SCA ecosystems; `system` covers OS-provided
+  binaries (e.g., `git`, `curl`) outside any package registry.
+- `trust_posture` ∈ {`api_only`, `official_registry`,
+  `operator_audited`, `vendor_attested`}. Discriminates trust
+  derivation: read-only API surface; default-trust-of-the-package-
+  registry; operator-audited code path; vendor-signed attestation.
+
+**Conformance.** A Brain MAY ship without a `trust-budget.toml` and
+remain conformant; the trust-budget sensor MUST treat absence as a
+permissive default and emit an advisory finding flagging the gap. A
+Brain that ships `trust-budget.toml` MUST validate against
+`trust-budget-v1.schema.json`; trust-budget findings MUST carry
+advisory weight (0.0) at v1. Hard-gate elevation is deferred to v2
+per BACKLOG B-23 — gated on calibration data demonstrating that
+operators acted on findings before the gate fires (mirrors the §16.4
+Layer-3 advisory-before-strict posture).
+
+**Composition with §5.4.1 hat contracts.** Each persona-hat contract
+optionally declares `forbidden_tools[]` and `network_targets:
+{ allowed[], forbidden[] }`. The trust-budget sensor SHOULD
+cross-reference both fields against `declared_shell_outs[]` and
+`declared_external_services[]` respectively, surfacing per-hat
+composition findings (e.g., "hat `supply-chain-auditor` declares
+`network_targets.allowed: [osv.dev]`; workspace declares no
+`osv.dev` external service" — drift in either direction is an
+advisory finding). Per-hat runtime enforcement requires observed
+tool invocations, deferred to v2 in tandem with hat-contract
+runtime enforcement (BACKLOG B-23, §5.4.1).
+
+**Drift semantics.** The sensor reports two distinct finding kinds:
+`trust_budget:undeclared:*` (actual surface item not in the
+operator-declared set — operator-action: add to `trust-budget.toml`
+OR remove the surface) and `trust_budget:overdeclared:*` (declared
+item not in the actual surface — operator-action: remove from
+`trust-budget.toml` OR re-introduce the surface intentionally). Both
+finding kinds carry advisory weight (0.0); they preserve
+operator-intent visibility regardless of the direction of drift.
+
+**Out-of-scope at v1.** Transitive crate budgets, runtime shell-out
+observation, `max_growth_per_release` prescriptive thresholds, A2A
+trust-budget signal types, and an auto-regenerate CLI — all deferred
+to v2 per BACKLOG B-23 with explicit calibration-data gates where
+applicable.
+
+### 16.9 Versioning + Extensibility
 
 The new schemas use `additionalProperties: false` per the
 ecosystem's existing pattern (§6.5). Additive changes (e.g., a
@@ -2552,7 +2672,7 @@ Future additive changes — severity-weighted scoring (§16.2),
 cross-Brain aggregation rules (§16.6), execution-isolated agent
 review (§16.4) — are candidate v2.7+ work.
 
-### 16.9 Reference Implementation
+### 16.10 Reference Implementation
 
 The reference implementation (NeuroGrim) ships:
 
@@ -3112,6 +3232,7 @@ mapping is language-agnostic — implementations choose their own file structure
 | **unified confidence** | The `unified_confidence` field at the root of agent-output (v2.7+). Weighted-mean of per-domain confidence over scored (non-advisory) domains: `round(sum(d.confidence * d.weight) / sum(d.weight))`. Receivers SHOULD use this for peer-to-peer trust decisions (§6.7). Distinct from per-domain confidence (one Brain has many of these, one of those). |
 | **children[] confidence** | The `confidence` field on each entry in the `children[]` array of an ecosystem-mode agent-output (§9.4). Aggregate confidence across the child Brain's scored domains, computed with the same weighted-mean formula as **unified confidence** for parity. The two share semantics; the only difference is scope (root = this Brain; children[] = an aggregated child Brain). |
 | **Cultural Substrate** | The invariant floor that governs HOW agents communicate (both agent↔human and agent↔agent). Declared in a culture manifest; carried as identical peer-local copies across every participating Brain; applied as the final step of the output pipeline (§14). |
+| **Declared crate** | An entry in `trust-budget.toml`'s `declared_crates[]` array (v2.10+) — `name`, `ecosystem` (cargo / pypi / npm / system), optional `notes` and `seeded` fields. Direct dependencies only at v1; transitive crates deferred to v2 per BACKLOG B-23. See §16.8. |
 | **Derived** | One of three truth layers (§2.2). Computed from source and runtime artifacts on demand, never committed, always reproducible. Gitignored. Re-computation is cheap; the derived product is a projection of its inputs. |
 | **Culture Invariant** | A value in the cultural substrate that can only tighten, never loosen — analogous to safety invariants in autonomy resolution (§5.5). Five canonical: positivity, integrity, honesty, critical-but-kind, respect. |
 | **Culture Manifest** | The `culture.yaml` document (validated against `culture-manifest-v1.schema.json`) declaring the canonical values and their application. Version-stamped; distributed as identical copies. |
@@ -3153,6 +3274,8 @@ mapping is language-agnostic — implementations choose their own file structure
 | **Task (A2A)** | A unit of interaction between peer Brains. A task has creation, optional streaming progress, completion, and idempotency semantics. See §13.3 and Appendix G.3. |
 | **Trajectory** | The trend analysis of scores over time: velocity, acceleration, classification. |
 | **Trajectory intelligence** | The Brain's capability (§7) of computing velocity + acceleration from score history and surfacing them as first-class signals that shape recommendations and autonomy decisions. "Am I getting healthier or sicker?" — the question trajectory intelligence answers. |
+| **Trust budget** | A first-class supply-chain primitive (v2.10+) declaring a Brain's trust surface — third-party crates, shell-out scripts, external services — as a schema-typed contract. Conforms to `trust-budget-v1.schema.json`. Sensor cross-references declared vs actual; emits `trust_budget:undeclared:*` and `trust_budget:overdeclared:*` advisory findings (drift in either direction). Composes with §5.4.1 hat-contract `forbidden_tools` + `network_targets.allowed` for per-hat trust composition. v1 advisory only; v2 hard gates per BACKLOG B-23. See §16.8. |
+| **trust-budget.toml** | The operator-authored TOML file at each Brain's repo root (committed, NOT under `.claude/`) declaring `declared_crates[]`, `declared_shell_outs[]`, `declared_external_services[]` (v2.10+). Each entry MAY carry a `seeded` boolean to suppress first-run findings on operator-acknowledged surface. Validates against `trust-budget-v1.schema.json`. See §16.8. |
 | **Truth layer** | Classification of a data artifact: source (hand-maintained), runtime (snapshot), or derived (computed). See also the individual entries for Source, Runtime, and Derived. |
 | **Unified score** | The single 0-100 health score computed as the weighted sum of domain effective scores. |
 
