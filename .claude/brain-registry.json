@@ -22,7 +22,8 @@
       "supply-chain-sca":       0.0,
       "supply-chain-vigilance": 0.0,
       "supply-chain-review":    0.0,
-      "domain-calibration":     0.0
+      "domain-calibration":     0.0,
+      "trust-budget":           0.0
     },
     "advisory_domains": [
       "spec-completeness",
@@ -37,7 +38,8 @@
       "supply-chain-sca",
       "supply-chain-vigilance",
       "supply-chain-review",
-      "domain-calibration"
+      "domain-calibration",
+      "trust-budget"
     ],
     "principle_map": {
       "spec-completeness":      "Spec Completeness",
@@ -52,7 +54,8 @@
       "supply-chain-sca":       "Supply-Chain SCA (Layer 1)",
       "supply-chain-vigilance": "Supply-Chain Vigilance (Layer 2)",
       "supply-chain-review":    "Supply-Chain Review (Layer 3)",
-      "domain-calibration":     "Domain Calibration (Brains-2.0 §17)"
+      "domain-calibration":     "Domain Calibration (Brains-2.0 §17)",
+      "trust-budget":           "Trust Budget (Brains-2.0 §16.8)"
     },
     "domain_definitions": {
       "_doc": "All domains read CMDB stubs until sensory tools land. Placeholder scores at 0 reflect unknown state; per spec principle #2 (scoring must be honest), unknown is not good.",
@@ -151,6 +154,13 @@
         "scoring_source": {
           "type": "cmdb",
           "path": ".claude/domain-calibration-cmdb.json"
+        }
+      },
+      "trust-budget": {
+        "_doc": "E-B2-4 (2026-04-27): Brains-2.0 trust budget primitive per LSP-Brains v2.10 §16.8. Spec repo posture (per CLAUDE.md): no Cargo workspace at this level — sensor emits trust_budget:degraded:no_cargo_lock advisory. trust-budget.toml at repo root declares the empty surface intentionally (no third-party Rust deps; Python helper scripts only when sensory tools land). Domain registered for symmetry across the four-Brain ecosystem. Default weight 0.0 (advisory) at v1; hard gates deferred to v2 per BACKLOG B-23. Per Q6 lock: trust-budget.toml stays LOCAL — no A2A propagation in v1. Refresh: `neurogrim sensory trust-budget --project-root D:/Brains/LSP-Brains/ > .claude/trust-budget-cmdb.json`.",
+        "scoring_source": {
+          "type": "cmdb",
+          "path": ".claude/trust-budget-cmdb.json"
         }
       }
     },

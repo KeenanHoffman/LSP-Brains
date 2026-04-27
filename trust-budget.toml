@@ -1,0 +1,27 @@
+schema_version = "1"
+
+notes = """
+LSP-Brains trust-budget v1 (E-B2-4 baseline, 2026-04-27).
+
+LSP-Brains is the SPECIFICATION repo, not a codebase: its CLAUDE.md states
+'a spec repo is not a codebase'. Contents are Markdown spec text (`spec/`),
+JSON schemas (`schemas/`), and adoption-guide prose. There is no Cargo.lock,
+no Python lockfile, no package.json — the trust-budget sensor's
+`trust_budget:degraded:no_cargo_lock` advisory is therefore EXPECTED and
+documents the spec-repo posture honestly.
+
+Likewise there are no `scripts/*.sh` and no source-code references to
+external FQDNs at runtime. The schema files reference doc-side $id URLs
+(e.g., github.com/KeenanHoffman/LSP-Brains/...), but these are JSON-Schema
+identifiers — not network calls.
+
+This file exists to satisfy the §16.8 SHOULD recommendation that every Brain
+declare a trust-budget.toml, even when (as here) the declared surface is
+empty. The intentional emptiness is itself the audit signal: 'this Brain
+ships zero third-party code surface.'
+"""
+
+# No declared_crates, declared_shell_outs, or declared_external_services
+# arrays — LSP-Brains has zero third-party trust surface. The
+# trust_budget:degraded:no_cargo_lock advisory finding is the honest
+# representation of this fact (per spec §16.8 + Q4 permissive-default).

@@ -1,0 +1,51 @@
+{
+  "findings": [
+    {
+      "detail": "Neither `\\\\?\\D:\\Brains\\LSP-Brains/Cargo.lock` nor `\\\\?\\D:\\Brains\\LSP-Brains/neurogrim/Cargo.lock` exists. Crate-drift detection skipped — this is expected for non-Rust Brains (LSP-Brains spec repo, python-starter). The shell-out and external-service surfaces are still computed.",
+      "name": "trust_budget:degraded:no_cargo_lock",
+      "points": 0,
+      "status": "neutral"
+    }
+  ],
+  "meta": {
+    "schema_version": "1",
+    "updated_at": "2026-04-27T22:04:51.094602500+00:00",
+    "updated_by": "trust-budget"
+  },
+  "score": 100,
+  "trust_budget_breakdown": {
+    "actual": {
+      "crate_count": 0,
+      "crates": [],
+      "service_count": 0,
+      "services": [],
+      "shell_out_count": 0,
+      "shell_outs": []
+    },
+    "declaration_path": "\\\\?\\D:\\Brains\\LSP-Brains\\trust-budget.toml",
+    "declaration_present": true,
+    "declared": {
+      "crate_count": 0,
+      "crates": {},
+      "service_count": 0,
+      "services": [],
+      "shell_out_count": 0,
+      "shell_outs": []
+    },
+    "vocabulary": {
+      "ecosystem": [
+        "cargo",
+        "pypi",
+        "npm",
+        "system"
+      ],
+      "trust_posture": [
+        "api_only",
+        "official_registry",
+        "operator_audited",
+        "vendor_attested"
+      ]
+    }
+  },
+  "updated_at": "2026-04-27T22:04:51.094602500+00:00"
+}
