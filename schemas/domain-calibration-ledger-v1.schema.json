@@ -1,0 +1,145 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/KeenanHoffman/LSP-Brains/schemas/domain-calibration-ledger-v1.schema.json",
+  "title": "Domain Calibration Ledger v1",
+  "description": "Append-only JSONL ledger recording per-domain calibration entries — observations where a Brain's automated score for a specific domain disagreed (or potentially disagreed) with a human's evaluation. Two entry kinds: `pending` (an automated trigger fired and produced an observation awaiting triage) and `triaged` (an operator reviewed the pending entry and recorded a decision; supersedes the pending entry via `supersedes_ts`). Same 2-phase append-only Pending → Triaged shape as `judge-integrity-ledger`, `supply-chain-decision-ledger`, and `domain-promotion-ledger`.\n\nEach line in the JSONL file is one entry. Readers reconstruct calibration state by folding the stream chronologically; `triaged` entries supersede their `pending` predecessors via the `supersedes_ts` reference. Writes happen via `neurogrim domain-calibration triage` CLI or the Brain's auto-trigger plumbing in `build_scorecard()`. The writer enforces schema compliance + operator-identity discipline (NEUROGRIM_OPERATOR env var or --operator CLI arg). Never edit entries in place — corrections are new entries superseding old ones (append-only discipline).\n\nIntentional non-migration: the existing ledgers `judge-integrity-ledger-v1` (agent-behavior-runner; spec §15.3), `supply-chain-decision-ledger-v1` (NeuroGrim; spec §16.4), and `domain-promotion-ledger-v1` (NeuroGrim; spec §15.5) are NOT migrated to this unified schema. Each retains its own schema and on-disk file. Spec §17 documents this carve-out — the unified schema is for new domains adopting the calibration-ledger pattern, not a forcing function for existing instances.\n\nPer-family extension: v1's `domain_family` enum has a single value (`domain-calibration`). Future families add an enum value here AND a per-family `definitions` block dispatched via `if/then/else` keyed on `domain_family`. Each per-family definition uses `additionalProperties: false` on its own slice. New families add a definition; they don't relax the schema. Added in spec v2.8 (Brains-2.0 E-B2-2).",
+  "type": "object",
+  "oneOf": [
+    { "$ref": "#/definitions/PendingEntry" },
+    { "$ref": "#/definitions/TriagedEntry" }
+  ],
+  "definitions": {
+    "BaseEntry": {
+      "type": "object",
+      "description": "Shared core fields present on every entry kind. Subtypes (PendingEntry, TriagedEntry) re-list these in their own `properties` blocks because `additionalProperties: false` requires explicit listing — same convention as `supply-chain-decision-ledger-v1`'s BaseEntry.",
+      "properties": {
+        "ts": {
+          "type": "number",
+          "description": "Unix seconds with fractional precision. Monotonically-increasing within a single ledger; uniqueness is the writer's responsibility (the writer rejects entries whose `ts` is not strictly later than the most-recent existing entry's `ts`)."
+        },
+        "schema_version": {
+          "type": "string",
+          "const": "1",
+          "description": "Schema version. Current: '1'."
+        },
+        "entry_kind": {
+          "type": "string",
+          "enum": ["pending", "triaged"],
+          "description": "Discriminator. `pending` is the automated observation; `triaged` is the human resolution that supersedes a pending entry via `supersedes_ts`."
+        },
+        "domain": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Specific domain name (e.g., 'test-health', 'capability-hygiene'). MUST match a domain key in the operator's brain-registry.json. The writer rejects unknown domain strings — the registry is the authoritative domain enum."
+        },
+        "domain_family": {
+          "type": "string",
+          "enum": ["domain-calibration"],
+          "description": "Coarse-grouping classifier for cross-domain analysis. v1 enum: `domain-calibration`. Future families (e.g., `governance`, `cultural-substrate`) add an enum value here AND a per-family definitions block dispatched via if/then/else. Existing families are append-only."
+        }
+      }
+    },
+    "PendingEntry": {
+      "allOf": [{ "$ref": "#/definitions/BaseEntry" }],
+      "type": "object",
+      "description": "An automated calibration trigger produced this entry awaiting human triage. Auto-created by the Brain's `build_scorecard()` plumbing when the domain's `calibration_trigger` config matches (OutOfExpectedRange, SignalClassFired, etc.) — OR opened manually by an operator via the triage CLI's `--manual` mode.",
+      "required": [
+        "ts",
+        "schema_version",
+        "entry_kind",
+        "domain",
+        "domain_family",
+        "trigger_signal_kind",
+        "actual_score"
+      ],
+      "properties": {
+        "ts": { "type": "number" },
+        "schema_version": { "type": "string", "const": "1" },
+        "entry_kind": { "type": "string", "const": "pending" },
+        "domain": { "type": "string", "minLength": 1 },
+        "domain_family": { "type": "string", "enum": ["domain-calibration"] },
+        "trigger_signal_kind": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Why this entry exists. Conventional values: 'out-of-range' (OutOfExpectedRange trigger fired); 'signal-class:<source>:<kind>' (SignalClassFired trigger; e.g., 'signal-class:vigilance:typosquat'); 'manual' (operator hand-created). Format conventions are domain-family-defined; the writer validates the string is non-empty but does not parse it."
+        },
+        "actual_score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "The score that triggered the entry, OR the score recorded at manual entry creation. Snapshot value — does not change as the underlying score evolves."
+        },
+        "expected_score_lower": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Optional. Domain's expected lower bound at trigger time (relevant for OutOfExpectedRange triggers; absent for SignalClassFired/Manual). Snapshot — surfaces what the operator's calibration config said when the entry fired, even if config later changed."
+        },
+        "expected_score_upper": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Optional. Domain's expected upper bound at trigger time. See `expected_score_lower`."
+        },
+        "context_notes": {
+          "type": "string",
+          "description": "Auto-generated rationale prose (e.g., 'test-health dropped from 85 to 30 — flagged because expected range is [70, 100]'). For human-readable triage; not parsed."
+        },
+        "context_artifacts": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Optional URIs to supporting evidence — CMDB snapshot paths, prior triage entry references, log fragments, etc."
+        }
+      },
+      "additionalProperties": false
+    },
+    "TriagedEntry": {
+      "allOf": [{ "$ref": "#/definitions/BaseEntry" }],
+      "type": "object",
+      "description": "An operator reviewed the pending entry and recorded a decision. Supersedes the pending entry via `supersedes_ts`. The triaged entry is auditable verbatim — operators rotating off the project 18 months later can reconstruct the original rationale.",
+      "required": [
+        "ts",
+        "schema_version",
+        "entry_kind",
+        "domain",
+        "domain_family",
+        "supersedes_ts",
+        "triage_decision",
+        "human_operator",
+        "human_notes"
+      ],
+      "properties": {
+        "ts": { "type": "number" },
+        "schema_version": { "type": "string", "const": "1" },
+        "entry_kind": { "type": "string", "const": "triaged" },
+        "domain": { "type": "string", "minLength": 1 },
+        "domain_family": { "type": "string", "enum": ["domain-calibration"] },
+        "supersedes_ts": {
+          "type": "number",
+          "description": "REQUIRED. The `ts` of the `pending` entry being resolved. MUST reference an existing pending entry in the same ledger (file). The writer validates this; an unknown `supersedes_ts` causes the triage to be rejected."
+        },
+        "triage_decision": {
+          "type": "string",
+          "enum": ["confirmed", "mislabeled", "gap", "no-action"],
+          "description": "Operator's decision class. `confirmed` = the signal is real and actionable (operator intends to act on the underlying problem). `mislabeled` = the signal is false (sensor was wrong; calibration adjustment may be warranted). `gap` = the signal is real but no domain/rubric mechanism exists to act on it (registers a follow-on need). `no-action` = the operator reviewed and concluded no action is warranted at this time. The four-class scheme is intentionally coarse — finer categorization belongs in `human_notes`."
+        },
+        "human_operator": {
+          "type": "string",
+          "minLength": 1,
+          "description": "REQUIRED. Operator handle from NEUROGRIM_OPERATOR env var or --operator CLI arg. Self-asserted in v1; future versions MAY use cryptographic identity. The writer rejects empty values."
+        },
+        "human_notes": {
+          "type": "string",
+          "minLength": 1,
+          "description": "REQUIRED, minLength 1. Operator's rationale (verbatim). Forces the decision to be auditable in 18 months when the operator who made it has rotated off the project. Same hygiene-lever discipline as `supply-chain-decision-ledger-v1`'s human_notes on accept/reject/pin entries."
+        },
+        "audit_artifacts": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Optional URIs to supporting audit material (CMDB snapshots, screenshots of the brain output at triage time, references to other ledger entries)."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
