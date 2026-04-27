@@ -151,6 +151,76 @@
                   },
                   "required": ["field", "type"]
                 }
+              },
+              "calibration_trigger": {
+                "description": "Optional. Opts the domain into automated calibration-ledger entries (spec §17.3). Discriminated union by `kind`. Auto-fire requires this field set to a non-`Manual` variant AND the registry's `enable_calibration_writes` set to `true`. The `domain-calibration` domain itself MUST use `Manual` (recursion guard, spec §17.9). New domains default to `Manual` until their score distribution and signal taxonomy are observed.",
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "Threshold-driven: the Brain appends a `pending` entry when `effective_score < min` OR `effective_score > max`. Operators SHOULD configure this only after observing the domain's score distribution.",
+                    "required": ["kind", "min", "max"],
+                    "properties": {
+                      "kind": { "const": "out-of-expected-range" },
+                      "min": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100,
+                        "description": "Inclusive lower bound; effective_score < this triggers."
+                      },
+                      "max": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100,
+                        "description": "Inclusive upper bound; effective_score > this triggers."
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "description": "Event-driven: the Brain appends a `pending` entry when the domain emits a CMDB finding whose name matches one of `signal_kinds`, or when an extras-key matches.",
+                    "required": ["kind", "signal_kinds"],
+                    "properties": {
+                      "kind": { "const": "signal-class-fired" },
+                      "signal_kinds": {
+                        "type": "array",
+                        "items": { "type": "string" },
+                        "minItems": 1,
+                        "description": "CMDB finding-name or extras-key strings."
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "description": "No automated triggers — entries are operator-created via `neurogrim domain-calibration triage --manual`. Default for new domains.",
+                    "required": ["kind"],
+                    "properties": {
+                      "kind": { "const": "manual" }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "description": "DEFERRED to v2 of the trigger union. Δ-from-rolling-baseline using §7 trajectory primitive. Reserved variant so future configs round-trip cleanly through v1 readers.",
+                    "required": ["kind", "window_days", "magnitude"],
+                    "properties": {
+                      "kind": { "const": "trajectory-swing" },
+                      "window_days": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "Rolling window length in days."
+                      },
+                      "magnitude": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100,
+                        "description": "Score-delta threshold (absolute) over the window."
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                ]
               }
             },
             "additionalProperties": true
@@ -161,6 +231,11 @@
           "description": "Static domain variables (hand-configured). Merged with auto-extracted variables at runtime.",
           "additionalProperties": true,
           "default": {}
+        },
+        "enable_calibration_writes": {
+          "type": "boolean",
+          "description": "Global gate for the domain-calibration ledger writer (spec §17.3). When `false` (default), the Brain emits NO automated calibration-ledger entries regardless of any per-domain `calibration_trigger` setting. When `true`, per-domain auto-fire requires a non-`Manual` `calibration_trigger` on the domain's definition. Manual operator triage via `neurogrim domain-calibration triage` is unaffected by this flag (the CLI writer always works). Both opt-ins must be set for an entry to be auto-created at score time.",
+          "default": false
         },
         "scoring": {
           "type": "object",
