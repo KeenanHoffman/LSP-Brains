@@ -21,7 +21,8 @@
       "capability-hygiene":     0.0,
       "supply-chain-sca":       0.0,
       "supply-chain-vigilance": 0.0,
-      "supply-chain-review":    0.0
+      "supply-chain-review":    0.0,
+      "domain-calibration":     0.0
     },
     "advisory_domains": [
       "spec-completeness",
@@ -35,7 +36,8 @@
       "capability-hygiene",
       "supply-chain-sca",
       "supply-chain-vigilance",
-      "supply-chain-review"
+      "supply-chain-review",
+      "domain-calibration"
     ],
     "principle_map": {
       "spec-completeness":      "Spec Completeness",
@@ -49,7 +51,8 @@
       "capability-hygiene":     "Capability Hygiene",
       "supply-chain-sca":       "Supply-Chain SCA (Layer 1)",
       "supply-chain-vigilance": "Supply-Chain Vigilance (Layer 2)",
-      "supply-chain-review":    "Supply-Chain Review (Layer 3)"
+      "supply-chain-review":    "Supply-Chain Review (Layer 3)",
+      "domain-calibration":     "Domain Calibration (Brains-2.0 §17)"
     },
     "domain_definitions": {
       "_doc": "All domains read CMDB stubs until sensory tools land. Placeholder scores at 0 reflect unknown state; per spec principle #2 (scoring must be honest), unknown is not good.",
@@ -141,6 +144,13 @@
         "scoring_source": {
           "type": "cmdb",
           "path": ".claude/supply-chain-review-cmdb.json"
+        }
+      },
+      "domain-calibration": {
+        "_doc": "E-B2-2 (2026-04-27): Brains-2.0 per-domain calibration meta-observer per LSP-Brains v2.8 §17.9. Reads .claude/brain/*-calibration-ledger*.jsonl and reports calibration health. The spec repo has only advisory domains today, so calibration ledgers will be empty in the steady state. Domain registered for symmetry across the four-Brain ecosystem and to surface any operator-initiated entries about spec-quality calibrations as the seven advisory domains evolve. Default weight 0.0. Refresh: `neurogrim sensory domain-calibration --project-root D:/Brains/LSP-Brains/ > .claude/domain-calibration-cmdb.json`.",
+        "scoring_source": {
+          "type": "cmdb",
+          "path": ".claude/domain-calibration-cmdb.json"
         }
       }
     },
