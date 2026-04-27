@@ -16,7 +16,7 @@
     "incident_patterns",
     "skipped_temporal"
   ],
-  "additionalProperties": false,
+  "additionalProperties": true,
   "properties": {
     "schema_version": {
       "type": "string",
@@ -33,6 +33,12 @@
       "minimum": 0,
       "maximum": 100,
       "description": "Unified confidence-weighted health score across all domains."
+    },
+    "unified_confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Weighted-mean confidence across scored (non-advisory) domains: round(sum(d.confidence * d.weight) / sum(d.weight)). Mirrors how unified_score is aggregated. Receivers SHOULD use this for peer-to-peer trust decisions (e.g., a peer with score=85 but unified_confidence=20 is a low-quality signal regardless of the score itself). Backward-compat: pre-v2.7 producers omit this field; consumers MUST tolerate absence (treat as 0 = unknown). The schema's root `additionalProperties` was relaxed from `false` to `true` in v2.7 as a deliberate one-time forward-compat enabler — future spec changes still require explicit property additions. Added in spec v2.7 (Brains-2.0 E-B2-1)."
     },
     "domains": {
       "type": "object",
@@ -371,7 +377,7 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 100,
-            "description": "Average confidence across child domains."
+            "description": "Weighted-mean confidence across the child's scored (non-advisory) domains: round(sum(d.confidence * d.weight) / sum(d.weight)). Aligned with the root-level `unified_confidence` formula in spec v2.7 (Brains-2.0 E-B2-1) for parity — both fields express the same aggregation, just at different scopes (root = this Brain, children[] = aggregated child Brain)."
           },
           "weight": {
             "type": "number",
