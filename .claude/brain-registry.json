@@ -23,7 +23,8 @@
       "supply-chain-vigilance": 0.0,
       "supply-chain-review":    0.0,
       "domain-calibration":     0.0,
-      "trust-budget":           0.0
+      "trust-budget":           0.0,
+      "operator-calibration":   0.0
     },
     "advisory_domains": [
       "spec-completeness",
@@ -39,7 +40,8 @@
       "supply-chain-vigilance",
       "supply-chain-review",
       "domain-calibration",
-      "trust-budget"
+      "trust-budget",
+      "operator-calibration"
     ],
     "principle_map": {
       "spec-completeness":      "Spec Completeness",
@@ -55,7 +57,8 @@
       "supply-chain-vigilance": "Supply-Chain Vigilance (Layer 2)",
       "supply-chain-review":    "Supply-Chain Review (Layer 3)",
       "domain-calibration":     "Domain Calibration (Brains-2.0 §17)",
-      "trust-budget":           "Trust Budget (Brains-2.0 §16.8)"
+      "trust-budget":           "Trust Budget (Brains-2.0 §16.8)",
+      "operator-calibration":   "Operator Calibration (Brains-2.0 §17.12)"
     },
     "domain_definitions": {
       "_doc": "All domains read CMDB stubs until sensory tools land. Placeholder scores at 0 reflect unknown state; per spec principle #2 (scoring must be honest), unknown is not good.",
@@ -161,6 +164,13 @@
         "scoring_source": {
           "type": "cmdb",
           "path": ".claude/trust-budget-cmdb.json"
+        }
+      },
+      "operator-calibration": {
+        "_doc": "E-B2-6 (2026-04-27): Brains-2.0 operator-calibration primitive per LSP-Brains v2.11 §17.12. Spec repo posture: no PostToolUse hook running here, so the invocation-ledger is empty in steady state — sensor reports advisory floor 100 + low_confidence true. Domain registered for symmetry across the four-Brain ecosystem; if/when the spec-repo's Python helper scripts trigger Skill invocations, the disposition CLI is available. Per Q7 (LOCAL only) and Q5 (no free-text justification) locks. Aggregation-only export per E6-1 BR-5 mitigation. Default weight 0.0 (advisory) at v1; v2 hard gates deferred per BACKLOG B-23. Refresh: `neurogrim sensory operator-calibration --project-root D:/Brains/LSP-Brains/ > .claude/operator-calibration-cmdb.json`.",
+        "scoring_source": {
+          "type": "cmdb",
+          "path": ".claude/operator-calibration-cmdb.json"
         }
       }
     },
