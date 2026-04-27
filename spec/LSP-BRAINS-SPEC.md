@@ -1,10 +1,55 @@
 # LSP Brains Specification
 
-**Version:** 2.8
+**Version:** 2.9
 **Date:** 2026-04-27
 **Status:** Active
 
 ### Changelog
+
+- **v2.9 (2026-04-27):** Two coordinated additions (Brains-2.0
+  E-B2-3 + E-B2-5).
+
+  **(1) Hat persona contracts (E-B2-3, §5.4.1 NEW).** Promotes
+  the persona-hat anti-capability prose at
+  `.claude/skills/hats/<hat>.md` into a schema-typed declaration
+  (`hat-contract-v1.schema.json`). Closed-set tool vocabulary —
+  8 initial entries: `Bash`, `Write`, `Edit`, `WebFetch`,
+  `WebSearch`, `network_egress`, `mcp:*`, `package_install`.
+  Optional `network_targets: { allowed[], forbidden[] }` for
+  per-hat egress restrictions (E-B2-4 trust-budget reuses this).
+  Validated statically by NeuroGrim's `capability_hygiene` sensor;
+  v1 advisory weight 0.0; runtime enforcement deferred to v2 per
+  BACKLOG B-23.
+
+  **Two-layer model (Q5 = 5c, operator-confirmed 2026-04-27).**
+  Registry hats (§5.4 — `brain-registry.json:config.hats.*` for
+  scoring biases) and persona hats (§5.4.1 — `.claude/skills/hats/`
+  for operational lenses + tool-boundary contracts) are
+  permanently distinct concepts. Appendix E gains 3 disambiguating
+  glossary entries: registry hat, persona hat, hat contract.
+  RFC 2119: contract frontmatter is RECOMMENDED (SHOULD), not
+  MUST — hats lacking frontmatter remain conformant; the sensor
+  flags absence as advisory finding only.
+
+  **(2) Multi-round pre-release assessment (E-B2-5, METH-EV §16
+  NEW).** Codifies the strict-bar → surgical-bar →
+  diminishing-returns + Phase 1.5 escape-hatch retrospective
+  pattern observed in the 2026-04-26 supply-chain pre-release
+  campaign (Rounds 1, 2, 3) as a documented methodology
+  evolution. RECOMMENDED, not MUST — cadence observed in a
+  single campaign (N=1) and §16 explicitly framed as "patterns
+  observed in pre-release context" pending validation by a
+  second campaign (earliest candidate: E-B2-8). Plan-critic
+  skill updated with §16 cross-reference for pre-release
+  contexts; routine plan review remains single-pass.
+
+  Additive only — no v2.8 conformance claim is invalidated;
+  implementations that don't ship hat-contract or §16 cadence
+  remain conformant. Reference implementation: NeuroGrim crate
+  `neurogrim-sensory` (hat-contract validator lands in
+  E-B2-3 Component 5; schema + fixtures + conformance test
+  shipped in E-B2-3 Components 1+3). Per-epic Layer-2 plans in
+  `~/.claude/plans/parallel-hugging-eich.md` § E-B2-3 + § E-B2-5.
 
 - **v2.8 (2026-04-27):** Domain calibration ledgers (Brains-2.0
   E-B2-2). New §17 formalizes the per-domain calibration ledger
@@ -760,6 +805,101 @@ A hat definition SHOULD contain:
 
 When a hat is active, `domain_emphasis` multipliers SHOULD be applied to domain effective
 scores for recommendation prioritization.
+
+### 5.4.1 Hat Persona Contracts
+
+> **NORMATIVE NOTE — Two distinct hat concepts (v2.9+).** §5.4
+> defines the **registry hat** (a Brain-scoring concept declared
+> in `brain-registry.json:config.hats.*` for domain emphasis and
+> autonomy bias). §5.4.1 defines the **persona hat** (an
+> operational lens declared at `.claude/skills/hats/<hat>.md` for
+> agent behavior — tone, briefing style, tool-boundary contract).
+> The two are intentionally separate. See Appendix E entries for
+> "registry hat", "persona hat", and "hat contract" for the
+> disambiguated definitions. The bare term "hat" remains
+> acceptable when context makes the scope unambiguous.
+
+A persona hat is a subagent-facing operational lens — adversary,
+architect, supply-chain-auditor, source-reader, incident-commander,
+rubber-duck, security-auditor, visionary — catalogued at
+`.claude/skills/hats/SKILL.md` and used to calibrate subagent
+briefings. Persona hats live as per-hat markdown files under
+`.claude/skills/hats/<hat>.md`, optionally carrying YAML
+frontmatter conforming to `hat-contract-v1.schema.json`.
+
+A persona hat's frontmatter SHOULD declare a tool-boundary contract:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | MUST | Hat identifier (e.g., "supply-chain-auditor") |
+| `description` | string | MUST | One-line summary of the lens |
+| `briefing` | string | SHOULD | One-line subagent calibration text |
+| `allowed_tools` | array | MAY | Closed-set tool names the hat is permitted to invoke |
+| `forbidden_tools` | array | MAY | Closed-set tool names the hat MUST NOT invoke |
+| `network_targets` | object | MAY | Per-hat egress restriction with `allowed[]` and `forbidden[]` FQDN arrays |
+
+**Closed-set vocabulary (v1 — additive promotion path).** The
+`allowed_tools` and `forbidden_tools` items use a closed enum of
+exactly 8 entries: `Bash`, `Write`, `Edit`, `WebFetch`,
+`WebSearch`, `network_egress`, `mcp:*` (wildcard for any
+MCP-namespaced tool), and `package_install` (semantic alias for
+the `npm install` / `pip install` / `cargo build` set). New
+vocabulary terms require a spec change with explicit
+METHODOLOGY-EVOLUTION entry — same discipline as the culture
+manifest (§14). Implementations MUST reject unknown vocabulary
+terms.
+
+**Backward compatibility.** A persona hat without frontmatter is
+a conformant v1 hat. The validator MUST treat a missing contract
+as advisory-only — equivalent to
+`{forbidden_tools: [], allowed_tools: ["*"]}` with an advisory
+finding flagging the absence. This matches the v1 RECOMMENDED
+posture; v2 may MANDATE per BACKLOG B-23.
+
+**Static validation v1.** The v1 validator (NeuroGrim's
+`capability_hygiene` sensor) performs three static checks:
+(a) frontmatter parses and validates against
+`hat-contract-v1.schema.json`; (b) every declared tool name is
+in the closed-set; (c) the catalog inventory is internally
+consistent. **Runtime enforcement** — observing actual tool
+invocations and cross-referencing against declared
+`forbidden_tools` — is OUT OF SCOPE for v1. The v1
+invocation-ledger captures only `Skill` tool invocations, not
+`Bash` / `Write` / `Edit`; runtime enforcement requires a ledger
+schema bump deferred to v2 per BACKLOG B-23.
+
+**Recursion guard (MUST).** The hat-contract validator itself
+MUST NOT wear a persona hat with declared `forbidden_tools`. The
+validator is plain code, not a hat — self-loop is closed by
+construction. Implementations MUST verify (e.g., via unit test)
+that the validator's source contains no shell-out invocations
+when reading hat-contract files.
+
+**Per-Brain scope (v1).** Persona hats are LOCAL to each Brain's
+`.claude/skills/hats/`. There is NO A2A propagation in v1. When
+a Brain authors a new persona hat, it does NOT automatically
+appear in peer Brains. Cross-Brain hat-contract sharing
+(`hat-contract-signal` A2A message type with bidirectional
+opt-in) is a v2 candidate per BACKLOG B-23.
+
+**Trust-budget composition (v2.8+).** The `network_targets` field
+exists to give the trust-budget primitive (E-B2-4 / §16.8) a
+per-hat egress restriction surface. Trust-budget reads BOTH
+`forbidden_tools` AND `network_targets.allowed` from the
+hat-contract; budget enforcement is implementation-defined within
+`trust-budget` and orthogonal to this contract.
+
+**Findings shape.** Implementations SHOULD surface validator
+output via the `capability-hygiene` CMDB findings stream, with
+finding kinds:
+- `hat_contract:declaration:<name>` — hat lacks frontmatter
+  (neutral, advisory).
+- `hat_contract:vocabulary:<name>:<term>` — frontmatter declares
+  an unknown vocabulary term (error, advisory).
+- `hat_contract:violation:<hat>:<observed_tool>` — DEFERRED to v2
+  (requires runtime signal per BACKLOG B-23).
+
+All v1 findings carry advisory weight (0.0).
 
 ### 5.5 Autonomy Resolution
 
@@ -2981,18 +3121,21 @@ mapping is language-agnostic — implementations choose their own file structure
 | **Effective score** | A domain's score after confidence weighting: `raw * confidence / 100`. |
 | **Gate** | A pass/fail quality check that blocks specified actions when failing. |
 | **Governance** | The Brain subsystem (§5) that decides what recommendations the Brain may act on, which human approval each action requires, and which invariants cannot be overridden. Expressed as gates, hats, and autonomy levels. |
-| **Hat** | An operational mode that biases domain emphasis and autonomy levels for a specific role or task. |
+| **Hat** | An operational mode in LSP Brains. The spec uses the term in two distinct scopes (v2.9+) — see **registry hat** (§5.4) and **persona hat** (§5.4.1) for the disambiguated definitions. The bare term "hat" is acceptable when context makes the scope unambiguous. |
+| **Hat contract** | The schema-typed tool-boundary declaration optionally attached to a **persona hat** as YAML frontmatter, conforming to `hat-contract-v1.schema.json` (v2.9+). Declares `allowed_tools[]`, `forbidden_tools[]` (closed-set vocabulary of 8 tool names), and optional `network_targets`. Validated statically by the `capability_hygiene` sensor; runtime enforcement deferred to v2 per BACKLOG B-23. See §5.4.1. |
 | **Incident pattern** | A cross-domain signal with recurrence tracking and severity escalation. |
 | **LSP Brains** | The language-agnostic specification for agent nervous systems (this document). |
 | **MCP** | Model Context Protocol. JSON-RPC based protocol for tool discovery and invocation between clients and servers. In LSP Brains, MCP is used for (1) sensory tool discovery (Brain-as-MCP-client, §3.7), (2) Brain exposure to LLM agents (Brain-as-MCP-server, Appendix F). MCP is NOT used for Brain-to-Brain peer communication — see A2A (§13, Appendix G). |
 | **NeuroGrim** | The reference implementation of LSP Brains, written in Rust. |
 | **Output modes** | The Brain's display modes (agent, score, health, trend, validate, propose, plan — §6.6, §11.1). Each targets a different consumer: JSON for machines, terse lines for humans, detailed reports for operators. |
 | **Peer Brain** | Another Brain with which this Brain communicates via A2A. In fractal composition (§9): parent/child. In dual brain (§10): local/external. |
-| **Persona** | A human user role that controls output verbosity and field filtering. |
+| **Persona** | A human user role that controls output verbosity and field filtering. Distinct from **persona hat** (the agent-facing operational lens — §5.4.1). |
+| **Persona hat** | An agent-facing operational lens (e.g., adversary, supply-chain-auditor, source-reader) declared at `.claude/skills/hats/<hat>.md` and used to calibrate subagent briefings (v2.9+). A persona hat MAY carry a **hat contract** (§5.4.1 — schema-typed tool-boundary declaration). Contrast with **registry hat** (§5.4 — Brain-scoring concept) and **Persona** (the human user role for output formatting). See §5.4.1. |
 | **Registry** | The `brain-registry.json` file containing all Brain configuration. Source truth. |
+| **Registry hat** | A hat declaration in `brain-registry.json:config.hats.*` (§5.4) carrying `description`, `domain_emphasis`, `autonomy_bias`, and optionally `suggest_when`. Affects Brain scoring (domain-emphasis multipliers) and gate autonomy resolution. Contrast with **persona hat** (§5.4.1 — operational lens declared at `.claude/skills/hats/`). The two are intentionally distinct concepts (v2.9+). See §5.4. |
 | **Scanner-chain compromise** | Attack class where the security scanner binary itself is the attack vector (e.g., the LiteLLM 2026-04-23 incident, where a trojanized Trivy release exfiltrated CI tokens). The structural mitigation in v2.6+ is the §16.2 prohibition on shelling out to external scanner binaries in the primary scoring path. See METHODOLOGY-EVOLUTION §15. |
 | **Supply-chain awareness** | First-class Brain concern (v2.6). Three composing layers: Layer 1 mechanical SCA, Layer 2 deep-signal vigilance, Layer 3 agent-assisted human review. See §16. |
-| **supply-chain-auditor hat** | Scoped agent persona for package-level review (provenance verification, unreviewed-dep audit, remediation gate). Required by §16.5; content is implementation-defined per §5.4. |
+| **supply-chain-auditor hat** | A **persona hat** (§5.4.1) for package-level review (provenance verification, unreviewed-dep audit, remediation gate). Required by §16.5; content is implementation-defined per §5.4.1. v2.9+ recommends authoring its frontmatter with `forbidden_tools: [package_install, Bash]` and `network_targets.allowed: [osv.dev]` to make the read-only / OSV-only constraints machine-checkable. |
 | **supply-chain-sca** | Layer 1 mechanical-SCA domain (§16.2). Lockfile parsing + vulnerability-database query; default weight 0.0 in v1 (advisory). Reference implementation is NeuroGrim's `supply_chain_sca/` module. |
 | **supply-chain-signal** | A2A message type (v2.6) carrying supply-chain findings between peer Brains under bidirectional opt-in consent. Payload conforms to `a2a-supply-chain-signal-v1.schema.json`. See §16.6. |
 | **supply-chain-vigilance** | Layer 2 deep-signal-vigilance domain (§16.3). Probabilistic findings on publishing behavior; default weight 0.0 in v1 (advisory). |

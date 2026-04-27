@@ -1,8 +1,280 @@
 # LSP Brains: Methodology Evolution Analysis
 
-**Date:** 2026-04-11 (original) — **Updated:** 2026-04-25 (Supply-chain awareness as first-class Brain concern)
-**Context:** Stages 5-6 complete; Stage 7 shipped agent-behavior measurement; Stage 8 made it trustworthy; Stage 9 proved it can detect failure. Stage 10 delivers the governance-via-evidence path from trustworthy-advisory to trustworthy-load-bearing. 2026-04-22/23 produced the first rigorous brain-vs-control measurements (three-arm comparison: no Brain, static context, live tool), which surfaced a pattern this log absorbs as §14. 2026-04-23/24/25 saw a PyPI supply-chain incident force the methodology to grow a normative supply-chain awareness layer (§15) — the first time the reference implementation shipped a normative protocol-shape feature ahead of the spec.
+**Date:** 2026-04-11 (original) — **Updated:** 2026-04-27 (Multi-round pre-release assessment — patterns observed in a single campaign)
+**Context:** Stages 5-6 complete; Stage 7 shipped agent-behavior measurement; Stage 8 made it trustworthy; Stage 9 proved it can detect failure. Stage 10 delivers the governance-via-evidence path from trustworthy-advisory to trustworthy-load-bearing. 2026-04-22/23 produced the first rigorous brain-vs-control measurements (three-arm comparison: no Brain, static context, live tool), which surfaced a pattern this log absorbs as §14. 2026-04-23/24/25 saw a PyPI supply-chain incident force the methodology to grow a normative supply-chain awareness layer (§15) — the first time the reference implementation shipped a normative protocol-shape feature ahead of the spec. 2026-04-26 closed the supply-chain pre-release campaign with a three-round retrospective whose strict-bar → surgical-bar → diminishing-returns shape this log absorbs as §16 — observational, scoped to pre-release, and explicitly bounded by single-campaign evidence.
 **Purpose:** Identify structural improvements to the underlying methodology.
+
+---
+
+## 16. Multi-round pre-release assessment — patterns observed in a single campaign (2026-04-27)
+
+### Problem
+
+Through v2.8 the methodology had a robust answer for adversarial review at *plan time* — the
+`plan-critic` skill (single-pass, structured, hat-driven) — but no documented cadence for
+the assessment work that happens **after** an epic closes and **before** a public release.
+The 2026-04-23/24/25/26 supply-chain pre-release campaign organically converged on a
+three-round shape (strict bar → surgical bar → tighter surgical + escape hatch) that
+nobody designed in advance. Each round had to be invented; the convergence pattern was
+visible only in retrospect.
+
+The gap was real even though it surfaced quietly: pre-release verification rounds are
+high-stakes (the next thing to happen after them is `cargo publish`), they are
+expensive (a substantial campaign consumes 2–3 person-days of focused work), and
+their outcomes are not symmetric (a missed defect ships to crates.io / PyPI; a
+spurious finding burns operator time). A methodology that names *plan-time* adversarial
+review explicitly and leaves *pre-release* assessment to be reinvented every campaign
+is silent on the harder, more consequential half.
+
+This section absorbs what the supply-chain campaign retrospective surfaced as the
+shape of pre-release work — strict-then-surgical-then-escape-hatch — without committing
+the spec to that shape as universal. It is **observational**, in the deliberate sense
+of §14: it documents a pattern, identifies the gates that would promote it to
+normative status in a future spec version, and identifies the gates that would kill
+it. The evidence base is N=1 (one campaign); the methodology stance is
+proportional to that evidence.
+
+### The Insight
+
+Three insights surfaced in the campaign retrospective. They are listed in the order
+the campaign produced them, not in order of importance — the third is the most
+load-bearing structurally.
+
+**1. Strict-bar Round 1 surfaces nearly all real defects.** Round 1 of the
+supply-chain campaign produced 70 catalog findings, of which 23 majors were
+fix-now. Round 2 produced 28 findings (5 majors fix-now); Round 3 produced 7
+findings (4 picks fix-now). The first round catches the bulk of real defects;
+later rounds tighten an already-mostly-clean surface. This pattern matches
+intuition about adversarial review economics — broad-net-cheap first pass,
+expensive narrow refinement after — but the campaign produced concrete numbers
+that future campaigns can compare against.
+
+**2. Surgical bar prevents Round 2+ from becoming Round 1 again.** Without a
+tighter bar in Round 2, the campaign would have re-litigated Round 1's deferred
+minors through the same lens — a treadmill that produces motion without
+progress. The campaign's Round 2 explicitly adopted a "top 5–7 highest-leverage"
+bar (and Round 3 tightened it further to 3–5 picks). This forces leverage
+discipline, not exhaustion discipline: the question stops being "is there a
+finding here" and becomes "is this finding worth fixing relative to the
+remaining BACKLOG."
+
+**3. Phase 1.5 escape hatch closes the series honestly.** The campaign's most
+structurally important convention is the "Phase 1.5" evaluation that runs
+between catalog and pick: when the catalog surfaces fewer than the round's
+surgical-bar minimum of high-leverage findings, the operator SHOULD close the
+assessment series rather than dropping the bar to find work to do. The
+campaign's Round 3 nearly fired the escape hatch (catalog produced 1
+strict-letter high-leverage finding; the operator chose Path C — Surgical-4 —
+over the strict-close path on affirmative leverage grounds). The pattern is
+that the escape hatch exists to be used; not invoking it requires affirmative
+justification, recorded in the round's artifact. Without this convention,
+multi-round assessment becomes ritual: a fourth round runs because there is a
+fourth round on the calendar, not because there is a fourth round of work to
+do.
+
+### The Fix
+
+§16 codifies the cadence as RECOMMENDED (not MUST) for **pre-release / epic-close-out
+contexts only**. Routine plan review remains single-pass via `plan-critic`; that
+boundary is load-bearing (see §16's "What this section does NOT commit the spec to"
+subsection below). The cadence has four named phases:
+
+- **Round 1 — Strict bar.** All blockers + majors fix-now; minors deferred to
+  BACKLOG unless trivially close to a fix-now item. Cadence: ~2 days for a
+  substantial campaign. Yield expectation: a substantial fraction of catalog
+  becomes fix-now.
+- **Round 2 — Surgical bar (top 5–7).** Re-evaluate Round 1's deferred minors
+  through a focused dimension lens (DRY, waste, gaps, inefficiency, etc.).
+  Cadence: ~½–1 day. Yield expectation: a smaller number of high-leverage picks
+  with deferral becoming the default disposition.
+- **Round 3 — Tighter surgical (3–5 picks) + Phase 1.5 escape hatch.** If the
+  catalog produces fewer than 3 high-leverage candidates, the operator SHOULD
+  close the series. If the catalog produces 3 or more, the operator picks the
+  surgical set. Cadence: ~3 hours. Yield expectation: very small absolute
+  count; high relative leverage on what is fixed.
+- **Round 4+ — Default to closure.** A fourth round faces severe diminishing
+  returns; the escape hatch RECOMMENDED-fires decisively at this point. The
+  remaining BACKLOG items are picked off opportunistically as code in those
+  areas is touched, NOT as the deliverable of a dedicated round.
+
+Each round SHOULD include a phase-specific verification gate (e.g., `cargo test
+--workspace --all-targets` green; the project's prepublish-check green) before
+the round is declared complete. Each round SHOULD produce a written artifact
+(catalog + pick + Phase 1.5 evaluation + retrospective) so the next campaign
+can compare against the previous one's shape.
+
+The retrospective produced by the supply-chain campaign — quoted verbatim below
+from `audit/PRE-RELEASE-ASSESSMENT-2026-04-26.md` lines 671–697 — is the
+canonical worked example. The diminishing-returns table MUST be quoted with
+the R3 caveat paragraph attached; the table read in isolation tells a
+misleading "yields are climbing" story that is the opposite of the methodology's
+actual claim. (This is a methodology-hygiene rule, not a cadence claim — see
+§16's RFC 2119 discipline note in the Implementation notes subsection.)
+
+> **Diminishing-returns retrospective**
+>
+> | Round | Findings | Fixed | Yield rate | Time |
+> |---|---|---|---|---|
+> | Round 1 | 70 | 23 majors | 33% | ~2 days |
+> | Round 2 | 28 | 5 majors + 1 doc | 21% | ~¾ day |
+> | Round 3 | 7 | 4 picks | 57% | ~3 hr |
+>
+> **The Round 3 yield rate (57%) is artificially high because the Phase 1.5
+> escape hatch + tighter surgical bar combined with the agent's conservative
+> labeling pre-filtered the candidate pool.** What this actually says: the
+> agent correctly identified ~7 things worth fixing; we picked 4 of them
+> (deferring 3 low-leverage); the discipline worked.
+>
+> **Recommendation for any future Round 4:** the assessment series has now
+> produced 32 fix-now items across 3 rounds. A fourth round would face severe
+> diminishing returns; the Phase 1.5 escape hatch would likely fire decisively.
+> The plan-critic position: **close the assessment series here** unless a
+> specific concrete concern emerges (e.g., a new incident, a calibration
+> regression, a sensor that develops a real performance pain). The remaining
+> BACKLOG B-22 items (now ~22 from R1 + R2 + R3 deferrals) should be picked
+> off opportunistically as code in those areas is touched, not as the
+> deliverable of a dedicated assessment round.
+> — `audit/PRE-RELEASE-ASSESSMENT-2026-04-26.md` lines 671–697 (verbatim)
+
+The R3 caveat is part of the methodology, not a footnote: a pre-release campaign
+that produces yield rates climbing toward Round N would be evidence the cadence
+is *not* converging — the opposite reading of the table-without-caveat.
+
+### What this section does NOT commit the spec to
+
+This subsection mirrors §14's epistemic posture explicitly. §16 is observational
+and bounded; it imposes no normative requirements on conforming Brains. Three
+explicit non-commitments:
+
+**1. Not normative MUST anywhere in cadence claims.** The cadence is RECOMMENDED.
+Round counts (3) are observed-not-prescribed — a campaign converging in 2 or 4
+rounds is not a §16 violation. Yield rates (33% / 21% / 57%) are descriptive,
+not predictive; no future campaign is expected to reproduce these numbers, and
+no scoring system computes against them. The Phase 1.5 escape hatch is
+RECOMMENDED rather than MUST — when a round catalog surfaces fewer than the
+round's surgical-bar minimum of high-leverage findings, the operator SHOULD
+close the series rather than drop the bar; an operator who continues anyway
+records affirmative justification but does not violate any spec invariant.
+
+**2. Not a substitute for `plan-critic`.** The `plan-critic` skill remains the
+single-pass adversarial review for plans. §16 is a **separate**, post-execution
+cadence for pre-release verification rounds. The two are complementary, not
+overlapping: plan-critic operates on a plan file before implementation; §16
+operates on a closed epic before publish. A plan reviewer running §16's
+multi-round shape on a routine plan would be applying pre-release methodology
+to plan-time work, which is the BR-7 trap §16 is explicitly avoiding.
+
+**3. Bounded to pre-release contexts.** §16 does NOT apply to routine plan
+review, BACKLOG triage, in-flight epic feedback, post-publish maintenance
+review, or any other context outside "this is the assessment work between an
+epic closing and a public release." The carve-out is structural: applying
+§16's cadence beyond pre-release would re-introduce the problem Insight #2
+addresses (every plan review becoming a 3-round campaign), and the evidence
+base does not support generalization. Future spec versions may re-evaluate
+this boundary after a non-release campaign produces evidence; for v2.9 the
+scope is narrow.
+
+### Rationale
+
+- **Strict-then-surgical is honest about marginal cost.** Round 1 is
+  wide-net-cheap — an Explore agent runs the catalog in well under a day. The
+  marginal cost of widening Round 2 to "all minors from the Round 1 catalog"
+  is high relative to the marginal yield (Round 2 produced 28 findings against
+  Round 1's 70; the deferred-minor pool is large and mostly low-leverage).
+  Surgical bar matches the cost-to-yield curve — it spends Round 2's review
+  budget on candidates likely to clear a leverage bar, not on exhaustively
+  re-evaluating Round 1's deferrals.
+- **Phase 1.5 is the structural mitigation against treadmill rounds.** A round
+  whose catalog produces fewer than the surgical-bar minimum of high-leverage
+  candidates is signal that the campaign has converged. Continuing the round
+  by lowering the bar produces motion (work performed) without progress (defects
+  closed that mattered). Naming Phase 1.5 as a deliverable phase — not a
+  silent "go / don't-go" check — forces the question into the artifact: every
+  campaign's round-N artifact contains a Phase 1.5 section that says either
+  "fired, closing series" or "did not fire because [specific affirmative
+  justification]." The artifact is what makes the methodology auditable in 18
+  months.
+- **N=1 generalization is honest about evidence.** §16 does NOT claim the
+  round counts (3), the escape-hatch threshold (<3 high-leverage candidates),
+  or the yield rates (33% / 21% / 57%) are universal. The supply-chain
+  campaign happened to converge in 3 rounds; another campaign may converge in
+  2 or 4. The pattern §16 codifies is the **shape** (strict → surgical → tighter
+  surgical + escape hatch), not the **counts**. A future campaign that converges
+  differently is evidence that strengthens or refines §16, not evidence that
+  refutes it — provided the shape (broader-then-narrower-then-honest-closure)
+  holds.
+
+### Implementation notes
+
+- **Reference case study.** The canonical campaign artifact is
+  `D:/Brains/audit/PRE-RELEASE-ASSESSMENT-2026-04-26.md`. It contains the
+  full Round 1, Round 2, and Round 3 catalogs + picks, the Phase 1.5
+  evaluation that nearly fired the escape hatch in Round 3, and the
+  diminishing-returns retrospective quoted above. Future campaigns SHOULD
+  produce a comparable artifact — same section structure, same Phase 1.5
+  named phase, same retrospective table at close — so cross-campaign
+  comparison is mechanically possible.
+- **Skill integration.** The `plan-critic` skill at
+  `D:/Brains/.claude/skills/plan-critic/SKILL.md` (and its NeuroGrim copy at
+  `D:/Brains/NeuroGrim/.claude/skills/plan-critic/SKILL.md`) carries a
+  `See Also` link to this section and a one-paragraph note in its "When to
+  Run the Critic" section pointing pre-release / epic-close-out contexts to
+  §16. The `plan-critic` skill protocol is unchanged — it remains
+  single-pass — and the cross-reference is minimal-link, not substantive
+  rewrite. This preserves the boundary the second non-commitment in this
+  section names.
+- **Cross-reference to METH-EV §15.** §15 is the precedent for a
+  spec-impl-alignment exception driven by security urgency. §16 explicitly
+  does **NOT** invoke §15's exception: pre-release verification has no
+  security urgency that mandates implementation-first, and §16 is being
+  documented at v2.9 in the absence of any conformance pressure to ship the
+  cadence as a sensor. The cadence is a methodology pattern, not a protocol
+  shape. If a future spec version absorbs §16's cadence into a normative
+  sensor (e.g., a "pre-release-readiness" Brain domain), that absorption
+  follows the conventional spec-first ordering, not §15's exception.
+- **Cross-reference to METH-EV §14.** §14 is the precedent for bounded-evidence
+  observational framing with explicit non-commitments. §16 follows §14's
+  template structurally: it documents what a single experimental observation
+  appears to suggest, names the gates that would promote it to normative
+  status, and names the gates that would kill it. §14 uses access-pattern
+  polymorphism as its observation; §16 uses the strict-then-surgical-then-escape
+  cadence as its observation. The "What this section does NOT commit the spec
+  to" subsection in both is the load-bearing BR-7 mitigation.
+- **RFC 2119 discipline.** §16 deliberately uses no MUST in any cadence claim.
+  The single MUST in this section is the methodology-hygiene rule that the
+  diminishing-returns table MUST be quoted with the R3 caveat (because the
+  table read in isolation actively misleads, which is a hygiene failure
+  rather than a cadence failure). All cadence claims use SHOULD or
+  RECOMMENDED, matching the evidence base (N=1 campaign).
+
+### Deferred
+
+- **Promotion of cadence-RECOMMENDED to cadence-MUST.** Requires a second
+  campaign to validate the shape. Earliest candidate: the post-Brains-2.0
+  v3.0 release campaign (E-B2-8 will itself be a pre-release campaign and
+  will be its own §16 case study). If E-B2-8 converges in roughly the same
+  shape — strict-then-surgical-then-escape — a future METH-EV revision MAY
+  promote specific elements (likely the Phase 1.5 escape-hatch convention
+  first) from RECOMMENDED to MUST.
+- **Round-count generalization beyond 3.** §16 v1 names 3 rounds because the
+  supply-chain campaign converged in 3; future campaigns may converge in 2
+  or 4. The escape hatch is the structural answer, not a count — a v3+ spec
+  may parameterize cadence by campaign size (small: 2; medium: 3; large: 4)
+  if cross-campaign evidence supports it.
+- **Application to non-release contexts.** Routine plan review, BACKLOG
+  triage, in-flight feedback. §16 v1 carves these out per the third
+  non-commitment; future spec versions may re-evaluate after a campaign
+  produces evidence that a non-release context organically adopted a
+  multi-round cadence. Until then, applying §16 outside pre-release is out
+  of scope.
+- **Cross-Brain assessment cadence.** A2A peer Brains running coordinated
+  multi-round campaigns (e.g., the ecosystem Brain orchestrating Round 1
+  catalogs across NeuroGrim and LSP-Brains in parallel) is a v3+ candidate.
+  Orthogonal to §16 v1, which scopes to a single project's pre-release.
+- **§16 sensor.** A future Brain domain could measure "is this campaign on a
+  §16 cadence?" by reading audit-folder artifacts (presence of Round-N
+  catalogs, Phase 1.5 evaluations, retrospective tables). Speculative;
+  defer until at least 3 campaigns produce comparable artifacts.
 
 ---
 
