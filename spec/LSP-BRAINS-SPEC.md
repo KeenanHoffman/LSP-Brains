@@ -1,10 +1,52 @@
 # LSP Brains Specification
 
-**Version:** 2.6
-**Date:** 2026-04-25
+**Version:** 2.7
+**Date:** 2026-04-27
 **Status:** Active
 
 ### Changelog
+
+- **v2.7 (2026-04-27):** Confidence as a first-class envelope field
+  (Brains-2.0 E-B2-1). Three coordinated additions across the
+  CMDB envelope, the agent-output interface contract, and the A2A
+  `score.updated` payload:
+  - **§3.1 / Appendix C:** `cmdb-envelope-v1.schema.json` gains an
+    optional root-level `confidence` integer in [0, 100]. When a
+    sensor has its own freshness signal (e.g., cache-age,
+    registry-fetch staleness), it MAY emit `confidence` directly;
+    when absent, the Brain falls back to the existing age-decay
+    model on `meta.updated_at` (§4.4). Schema relax-friendly:
+    pre-v2.7 envelopes still validate.
+  - **§6.1 / §6.7 (new):** `agent-output-v1` gains
+    `unified_confidence` as a peer of `score`. Formula:
+    `round(sum(d.confidence * d.weight) / sum(d.weight))` over
+    scored (non-advisory) domains. Receivers SHOULD use this for
+    peer-to-peer trust decisions ("score=85 / unified_confidence=20
+    is a low-quality signal"). The schema's root
+    `additionalProperties` was relaxed from `false` to `true` as a
+    deliberate one-time forward-compat enabler — future spec
+    changes still require explicit property additions; the
+    relaxation is not a posture for ongoing sloppiness.
+  - **§13.4:** `score.updated` payload (= AgentOutput) now carries
+    `unified_confidence`. Consumers MUST tolerate absence from v2.6
+    peers (treat as 0); v2.7+ producers MUST emit it.
+  - **Appendix E (Glossary):** Three confidence concepts
+    disambiguated — envelope.confidence (sensor-supplied freshness,
+    optional), unified_confidence (Brain-aggregate, weighted-mean),
+    children[].confidence (ecosystem-aggregate of a child Brain,
+    weighted-mean for parity). The supply-chain-signal payload's
+    `cross_brain_count` field is explicitly NOT a confidence — it
+    is a peer count, distinct concept.
+
+  Additive only — no v2.6 conformance claim is invalidated;
+  v2.6 implementations that emit AgentOutput without
+  unified_confidence remain conformant-to-v2.6 (and v2.7
+  consumers tolerate them via the schema's
+  `additionalProperties: true` and `#[serde(default)]`-style
+  defaults). Reference implementation: NeuroGrim crates
+  `neurogrim-core`, `neurogrim-sensory`, `neurogrim-cli`.
+  See per-epic Layer-2 plan in
+  `~/.claude/plans/parallel-hugging-eich.md` § E-B2-1.
 
 - **v2.6 (2026-04-25):** Supply-chain awareness. New §16 formalizes
   supply-chain awareness as a first-class Brain concern, structured
@@ -275,7 +317,8 @@ A sensory tool MUST write a JSON file containing at minimum:
     "source": "<source descriptor>"
   },
   "score": 85,
-  "updated_at": "<ISO 8601 UTC>"
+  "updated_at": "<ISO 8601 UTC>",
+  "confidence": 90
 }
 ```
 
@@ -291,6 +334,20 @@ A sensory tool MUST write a JSON file containing at minimum:
 4. The `meta.updated_at` field MUST be present and MUST be an ISO 8601 UTC timestamp.
 
 5. The `meta.updated_by` field MUST identify the tool that wrote this CMDB.
+
+**MAY requirements:**
+
+6. The `confidence` field MAY be present (added in v2.7). When present, it MUST
+   be an integer in [0, 100] expressing the sensor's own freshness signal —
+   e.g., a cache-age decay, a registry-fetch staleness, or a domain-specific
+   notion of how trustworthy this snapshot is. When present, the Brain MUST
+   prefer it over the age-decay model (§4.4) — sensors with their own
+   freshness signal know better than the aggregator's clock-based estimate.
+   When absent, the Brain MUST fall back to age-decay of `meta.updated_at`
+   per §4.4. Most sensors should omit this field; opt-in is intended for
+   sensors whose freshness signal is independent of clock-skew (e.g.,
+   `supply-chain-vigilance` with cache-age data, `supply-chain-sca` with
+   OSV cache age).
 
 > See [Appendix C](#appendix-c-cmdb-meta-envelope-schema) for the full CMDB meta JSON schema.
 
@@ -464,8 +521,17 @@ scoring functions. This is an extension point. The specification defines the con
 
 ### 4.4 Confidence Computation
 
-For CMDB-type domains, confidence MUST be computed from the age of the timestamp
-identified by `scoring_source.updated_at_field`.
+For CMDB-type domains, confidence is resolved in two steps:
+
+1. **Envelope-supplied confidence (v2.7+).** If the CMDB envelope contains
+   a top-level `confidence` integer in [0, 100] (§3.1), the Brain MUST use
+   that value. Sensors with their own freshness signal — independent of
+   the operator's machine clock — know more about the snapshot's
+   trustworthiness than an age-decay heuristic can express.
+
+2. **Age-decay fallback.** If the envelope omits `confidence`, the Brain
+   MUST compute confidence from the age of the timestamp identified by
+   `scoring_source.updated_at_field` using the default model below.
 
 Implementations MUST use **continuous exponential decay** as the default confidence model:
 
@@ -542,6 +608,17 @@ A domain definition MAY include a `floor` object:
 When a domain's effective score falls below `floor.min_score`, the unified score MUST be
 capped at `floor.unified_cap` regardless of other domain scores. Multiple floors are
 evaluated independently; the most restrictive cap wins.
+
+**Confidence counterpart (v2.7+).** The unified score has a peer
+field `unified_confidence` in agent output (§6.7) that aggregates
+confidence with the same weight-and-advisory semantics as
+`unified_score` — filtering out advisory domains, weighting by
+domain weight. The shape difference is just normalization: where
+`unified_score` is a weighted *contribution* (sums weighted
+effective scores), `unified_confidence` is a weighted *mean*
+(divides by total weight). Receivers SHOULD use the pair
+`(unified_score, unified_confidence)` for trust decisions on
+peer-supplied scores.
 
 ### 4.7 Score Labels
 
@@ -682,13 +759,15 @@ defined in this section.
 
 ### 6.1 Required Fields
 
-Every agent-mode output MUST contain these 11 fields:
+Every agent-mode output MUST contain these 12 fields (was 11 pre-v2.7;
+`unified_confidence` added in v2.7):
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `schema_version` | `"1"` (string const) | Interface version |
 | `scored_at` | ISO 8601 datetime | When scoring was performed |
 | `score` | integer 0-100 | Unified confidence-weighted score |
+| `unified_confidence` | integer 0-100 | Brain-aggregate confidence (v2.7+; see §6.7) |
 | `domains` | object | Per-domain scores |
 | `dirty_gates` | string[] | Gate keys with status `"dirty"` |
 | `stale_artifacts` | string[] | Artifact keys with stale freshness |
@@ -697,6 +776,12 @@ Every agent-mode output MUST contain these 11 fields:
 | `correlations_fired` | array | Matched correlation rules |
 | `incident_patterns` | array | Matched incident patterns |
 | `skipped_temporal` | string[] | Temporal patterns skipped |
+
+**Backward compatibility (v2.6 producers):** v2.7 consumers MUST
+tolerate the absence of `unified_confidence` from peers conforming
+to v2.6 or earlier (treat as 0 = unknown). The schema reflects this
+by listing `unified_confidence` in `properties` but NOT in
+`required[]` — see §6.7 for the producer/consumer contract details.
 
 ### 6.2 Per-Domain Object
 
@@ -754,6 +839,18 @@ Consumers MUST validate they understand the schema version before processing out
 - Removing or renaming required fields DOES require a major version bump
 - Changing the type of any field DOES require a major version bump
 
+**v2.7 schema-evolution note:** The v2.7 spec relaxed the
+agent-output-v1 schema's root `additionalProperties` from `false`
+to `true` as a deliberate one-time forward-compat enabler. Pre-v2.7
+the schema rejected any unknown root field; v2.7 onward, future
+spec changes can add optional fields without reissuing the schema.
+This is NOT a license for ongoing additionalProperties sloppiness —
+future spec changes still require explicit `properties` additions.
+The relaxation just unblocks the additive-evolution discipline so
+that adding `unified_confidence` (and similarly-shaped future
+fields) doesn't require coordinated lockstep upgrades across all
+peers in the four-Brain ecosystem.
+
 ### 6.6 Additional Output Modes
 
 A conformant Brain SHOULD support:
@@ -766,6 +863,67 @@ A conformant Brain SHOULD support:
 | `trend` | JSON | Trajectory analysis (Section 7) |
 | `propose` | JSON | Remediation proposals with autonomy levels |
 | `plan` | JSON | Multi-step execution plan with wave ordering |
+
+### 6.7 Unified Confidence
+
+Added in v2.7 (Brains-2.0 E-B2-1). `unified_confidence` is a peer
+of `score` in the agent output: where `score` is the weighted-mean
+of per-domain *effective scores*, `unified_confidence` is the
+weighted-mean of per-domain *confidence*.
+
+**Formula:**
+
+```
+unified_confidence = round(
+    sum(d.confidence * d.weight) / sum(d.weight)
+    over scored (non-advisory) domains
+)
+```
+
+The aggregation matches `unified_score`'s semantics — both filter
+out advisory-weight (0.0) domains; both weight by domain weight.
+The shape difference is the normalization-by-weight-sum: `score`
+is a weighted *contribution* (sums to ≤100 only if weights sum to
+1.0); `unified_confidence` is a weighted *mean* (always in [0, 100]
+regardless of weight sum). When the scored set is empty OR total
+weight is 0, `unified_confidence` MUST be 0 — matching
+`unified_score`'s "no signal" semantics.
+
+**Producer obligation (v2.7+ Brains):**
+- v2.7+ producers MUST emit `unified_confidence` in every agent-
+  mode output.
+
+**Consumer obligation (all Brains):**
+- v2.7+ consumers MUST tolerate the absence of `unified_confidence`
+  from peers conforming to v2.6 or earlier. Absence is interpreted
+  as 0 (unknown, no signal).
+- Consumers receiving `unified_confidence` SHOULD use it for
+  peer-to-peer trust decisions: a peer with `score=85` and
+  `unified_confidence=20` is a low-quality signal regardless of
+  the score itself, and SHOULD be discounted in cross-Brain
+  aggregation (§9.4).
+
+**Rendering:**
+- Operator-visible output SHOULD surface `unified_confidence`
+  alongside `score` when it is below 100 (the steady-state for
+  fresh data — suppressing the 100 case avoids noise). When
+  `unified_confidence == 0`, output MUST surface it explicitly so
+  the operator distinguishes "v2.6 peer" or "all-advisory Brain"
+  from missing data.
+
+**Why a separate field rather than overloading `score`:**
+- `score` and `confidence` answer different questions: "how
+  healthy?" vs. "how trustworthy is the answer?". A peer reporting
+  `score=85 / confidence=100` differs meaningfully from `score=85 /
+  confidence=10` — the former is actionable; the latter SHOULD
+  prompt re-fetch or operator review.
+- The distinction was implicit per-domain since v2.0 (per-domain
+  `confidence` exists in §6.2). v2.7 surfaces the aggregate so
+  receivers don't have to recompute it from per-domain values
+  embedded in the payload.
+
+> See [Appendix E](#appendix-e-glossary) for the disambiguation of
+> the three confidence concepts (envelope, unified, children[]).
 
 ---
 
@@ -1407,8 +1565,20 @@ proposal.created, proposal.resolved,
 config.changed
 ```
 
+(v2.6 additionally defined the `supply-chain-signal` message type
+with bidirectional opt-in — see §16.6.)
+
 A Brain declares which types it `accepts` and which it `emits` in its Agent Card. The
 payload shape per message type is defined in Appendix G.
+
+**v2.7 payload note (`score.updated`):** The `score.updated`
+payload IS the AgentOutput per §6 — including `unified_confidence`
+as of v2.7. Receivers SHOULD use the peer's `unified_confidence`
+for trust decisions when aggregating across peers (§9.4): a peer
+with high score but low `unified_confidence` is a low-quality
+signal regardless of the score itself. v2.7+ consumers MUST
+tolerate the absence of `unified_confidence` from peers conforming
+to v2.6 or earlier (treat as 0; see §6.7).
 
 ### 13.5 Transport Selection
 
@@ -2238,11 +2408,13 @@ that ordering is acceptable).
 The agent output schema is a JSON Schema (draft-07) document that validates the output
 of `agent` mode. The schema enforces:
 
-- 11 required top-level fields (Section 6.1)
+- 12 required top-level fields (Section 6.1; was 11 pre-v2.7 — `unified_confidence` added in v2.7)
 - Per-domain object structure (Section 6.2)
 - Recommendation object structure (Section 6.3)
 - Optional field types (Section 6.4)
-- `additionalProperties: false` at every level for strict validation
+- `additionalProperties: false` at every nested level for strict validation; the root
+  `additionalProperties` was relaxed to `true` in v2.7 as a deliberate one-time
+  forward-compat enabler (§6.5 — does not loosen nested structures)
 
 Implementations MUST validate their agent output against this schema. The recommended
 validation approach: produce the JSON, then validate with a JSON Schema library before
@@ -2334,6 +2506,12 @@ Every CMDB file written by a sensory tool MUST include the meta envelope:
           "description": "Description of the external source observed."
         }
       }
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Optional sensor-supplied confidence in [0, 100] (added in v2.7). When absent, the Brain falls back to age-decay of meta.updated_at per §4.4. When present, the envelope value takes precedence — sensors with their own freshness signal (cache-age, registry-fetch staleness) MAY emit this directly. See §3.1."
     }
   }
 }
@@ -2341,7 +2519,8 @@ Every CMDB file written by a sensory tool MUST include the meta envelope:
 
 The meta envelope enables the Brain to:
 - Detect schema version mismatches
-- Compute confidence from `updated_at` age
+- Compute confidence from `updated_at` age (or use sensor-supplied
+  `confidence` when present, v2.7+)
 - Identify the tool for debugging
 
 ---
@@ -2360,7 +2539,7 @@ mapping is language-agnostic — implementations choose their own file structure
 | 4.4 Confidence | Confidence module | Exponential decay, freshness multiplier |
 | 5. Governance | Governance module | Gate management, staleness, recommendation priority |
 | 5.5 Autonomy | Autonomy resolver | 5-step resolution, safety invariants |
-| 6. Interface | Agent output builder | 11 required JSON fields, schema validation |
+| 6. Interface | Agent output builder | 12 required JSON fields (v2.7+), schema validation |
 | 7. Trajectory | Trajectory module | Score history, velocity, acceleration, classification |
 | 8. Correlation | Correlation engine | Condition trees, domain variables, incident patterns |
 | 9. Fractal | Ecosystem module | Child discovery (`a2a_endpoint` or `brain_path`), topological sort, score aggregation, transport dispatch |
@@ -2392,7 +2571,11 @@ mapping is language-agnostic — implementations choose their own file structure
 | **Brain** | The central scoring and reasoning engine that reads CMDBs, computes health scores, detects patterns, and produces recommendations. |
 | **CMDB** | Configuration Management Database. In LSP Brains: a JSON file containing a snapshot of some aspect of project state, written by a sensory tool. |
 | **Condition tree** | A JSON expression tree evaluated by the correlation engine to determine whether a pattern fires. |
-| **Confidence** | A 0-100 integer indicating how trustworthy a domain's score is. Decays with CMDB age. |
+| **Confidence** | A 0-100 integer indicating how trustworthy a score is. The spec uses the term in three distinct scopes — see **envelope confidence**, **per-domain confidence**, **unified confidence**, and **children[] confidence** for the disambiguated definitions. The bare term "confidence" is acceptable when context makes the scope unambiguous. |
+| **envelope confidence** | The optional `confidence` field at the root of a CMDB envelope (`cmdb-envelope-v1.schema.json`, v2.7+). Sensor-supplied freshness signal in [0, 100]. When present, takes precedence over the Brain's age-decay computation; when absent, the Brain falls back to age-decay of `meta.updated_at`. See §3.1 + §4.4. Distinct from **per-domain confidence** (downstream of envelope confidence) and **unified confidence** (aggregate across domains). |
+| **per-domain confidence** | The `confidence` field on each entry in the `domains` map of an agent-output (§6.2). Computed from envelope confidence (when supplied) or via age-decay of `meta.updated_at` (§4.4). The value used in effective-score computation (§4.5). |
+| **unified confidence** | The `unified_confidence` field at the root of agent-output (v2.7+). Weighted-mean of per-domain confidence over scored (non-advisory) domains: `round(sum(d.confidence * d.weight) / sum(d.weight))`. Receivers SHOULD use this for peer-to-peer trust decisions (§6.7). Distinct from per-domain confidence (one Brain has many of these, one of those). |
+| **children[] confidence** | The `confidence` field on each entry in the `children[]` array of an ecosystem-mode agent-output (§9.4). Aggregate confidence across the child Brain's scored domains, computed with the same weighted-mean formula as **unified confidence** for parity. The two share semantics; the only difference is scope (root = this Brain; children[] = an aggregated child Brain). |
 | **Cultural Substrate** | The invariant floor that governs HOW agents communicate (both agent↔human and agent↔agent). Declared in a culture manifest; carried as identical peer-local copies across every participating Brain; applied as the final step of the output pipeline (§14). |
 | **Derived** | One of three truth layers (§2.2). Computed from source and runtime artifacts on demand, never committed, always reproducible. Gitignored. Re-computation is cheap; the derived product is a projection of its inputs. |
 | **Culture Invariant** | A value in the cultural substrate that can only tighten, never loosen — analogous to safety invariants in autonomy resolution (§5.5). Five canonical: positivity, integrity, honesty, critical-but-kind, respect. |
