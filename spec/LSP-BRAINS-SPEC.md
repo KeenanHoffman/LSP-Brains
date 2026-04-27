@@ -1,10 +1,58 @@
 # LSP Brains Specification
 
-**Version:** 2.7
+**Version:** 2.8
 **Date:** 2026-04-27
 **Status:** Active
 
 ### Changelog
+
+- **v2.8 (2026-04-27):** Domain calibration ledgers (Brains-2.0
+  E-B2-2). New §17 formalizes the per-domain calibration ledger
+  as a first-class methodology concern — generalizing the 2-phase
+  Pending → Triaged append-only pattern that already shipped as
+  three separate instances (judge-integrity-ledger v2.4,
+  domain-promotion-ledger v2.5, supply-chain-decision-ledger v2.6)
+  into a unified schema for new domains adopting the pattern. The
+  three existing ledger instances are intentionally NOT migrated;
+  each retains its own schema and on-disk file. New domains adopt
+  the unified `domain-calibration-ledger-v1` schema.
+
+  Triggers are a discriminated union (Layer-2 design pivot from
+  the original `expected_score_range` primitive after adversarial
+  review — that primitive over-fired on legitimate signal
+  collapses): `OutOfExpectedRange { min, max }` for threshold-
+  driven domains; `SignalClassFired { signal_kinds }` for
+  event-driven domains (matches supply-chain's existing trigger
+  shape); `Manual` for operator-only entries (the safe default
+  for new domains). `TrajectorySwing` is a v2 candidate.
+
+  Triage decision is a coarse 4-class enum
+  (confirmed/mislabeled/gap/no-action); finer categorization
+  belongs in `human_notes` (verbatim, auditable). Operator
+  identity from `NEUROGRIM_OPERATOR` env var or `--operator`
+  CLI flag — same shape as supply-chain's existing convention.
+
+  Rotation policy: `*-calibration-ledger-{year}.jsonl` annual
+  archives; sensor reader globs `*-calibration-ledger*.jsonl`
+  so rotation is transparent.
+
+  No A2A cross-Brain aggregation in v1 — calibration ledgers
+  stay LOCAL to each Brain. (v2 candidate: bidirectional opt-in
+  matching v2.6 supply-chain-signal posture.)
+
+  Naming note: the Brains-2.0 master plan called this concept
+  "self-coherence", but the Layer-2 review surfaced a collision
+  with the existing `coherence` domain (cross-domain correlation
+  health, see §8). Renamed to `domain-calibration` at the
+  Layer-2 pass — the schema, the sensor file, and the CLI all
+  use the new name. Spec §17's title mirrors.
+
+  Additive only — no v2.7 conformance claim is invalidated;
+  implementations that don't ship the calibration domain remain
+  conformant. Reference implementation: NeuroGrim crate
+  `neurogrim-core::calibration_ledger` (lands in E-B2-2 C3).
+  Per-epic Layer-2 plan in
+  `~/.claude/plans/parallel-hugging-eich.md` § E-B2-2.
 
 - **v2.7 (2026-04-27):** Confidence as a first-class envelope field
   (Brains-2.0 E-B2-1). Three coordinated additions across the
@@ -178,6 +226,7 @@ interpreted as described in [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119).
 14. [Cultural Substrate](#14-cultural-substrate)
 15. [Agent Behavior Verification](#15-agent-behavior-verification)
 16. [Supply-chain Awareness](#16-supply-chain-awareness)
+17. [Domain Calibration](#17-domain-calibration)
 - [Appendix A: Agent Output Schema](#appendix-a-agent-output-schema)
 - [Appendix B: Brain Registry Schema](#appendix-b-brain-registry-schema)
 - [Appendix C: CMDB Meta Envelope Schema](#appendix-c-cmdb-meta-envelope-schema)
@@ -2398,6 +2447,352 @@ that ordering is acceptable).
 
 ---
 
+## 17. Domain Calibration
+
+A Brain's score for a domain is a model of the truth, not the
+truth itself. When a human disagrees with the score — judges that
+the Brain over-rated `test-health` because the green tests are
+flaky, or that `code-quality` is artificially low because the
+linter is mis-configured — that disagreement is **calibration
+data**. §17 formalizes how Brains record those disagreements as
+first-class artifacts, so that:
+
+1. The decision becomes auditable 18 months later when the
+   operator who made it has rotated off the project.
+2. Cross-domain analysis can detect when calibration burden is
+   shifting (a domain with persistent triage backlog is asking
+   for attention).
+3. The Brain can later compute a *self-observation* score — does
+   our scoring model agree with humans? — without re-deriving the
+   pattern from scratch in each domain.
+
+§17 introduces a **unified ledger schema** for calibration entries
+in domains that don't already have a ledger of their own. Three
+existing ledger instances — judge-integrity-ledger (§15.3),
+domain-promotion-ledger (§15.5), supply-chain-decision-ledger
+(§16.4) — are **intentionally NOT migrated**. They predate the
+unified schema, and their per-family fields (red samples; promotion
+audits; package references) are richer than the unified schema
+captures. The unified schema is for **new domains** adopting the
+calibration pattern.
+
+> **Diagram:** See `diagrams/calibration-ledger-flow.mmd` (planned;
+> reference implementation tracks).
+
+### 17.1 Concept
+
+The word "calibration" is used in four distinct senses across this
+spec. Operators reading §17 in isolation will encounter all four;
+this glossary disambiguates them up front:
+
+| Concept | Sense | Spec Reference |
+|---------|-------|----------------|
+| **Adversarial audit** (red-mode) | Running a calibrator against red samples to verify the judge can detect known failure modes (one-sided ceiling check) | §15.3 |
+| **Promotion audit** | The evidence-bundle review that promotes an advisory-weight domain to non-zero weight | §15.5 |
+| **Judge-integrity audit** | The append-only ledger of red-misses + operator triage of those misses | §15.3 + §15.4 |
+| **Domain calibration** (this section) | The append-only per-domain ledger of automated-vs-human-decision disagreement; the topic of §17 | §17 |
+
+When this section says "calibration" without qualification, it
+refers to the §17 domain-calibration sense.
+
+### 17.2 The 2-phase Ledger Pattern
+
+Calibration ledgers are append-only JSONL files conforming to
+`domain-calibration-ledger-v1.schema.json`. Each ledger records
+two entry kinds:
+
+- **Pending** — an automated trigger fired and produced an
+  observation awaiting human triage. Snapshot of the score that
+  triggered it + the trigger reason.
+- **Triaged** — an operator reviewed the pending entry and
+  recorded a decision. Supersedes the pending via `supersedes_ts`.
+
+This is the same shape that `judge-integrity-ledger`,
+`domain-promotion-ledger`, and `supply-chain-decision-ledger`
+already use. §17's contribution is the unified schema for new
+adopters, plus the formal trigger-discriminated-union (§17.3) and
+the per-family extension scaffold (§17.4).
+
+A conformant Brain implementing §17 MUST:
+
+1. Write entries via append-only `O_APPEND` semantics (atomic
+   temp+rename for cross-process safety).
+2. Reject in-place edits — corrections are new entries
+   superseding old ones.
+3. Validate every entry against the schema before writing.
+4. Reject pending entries whose `domain` is unknown to the
+   registry (the registry is the authoritative domain enum).
+5. Reject triaged entries whose `supersedes_ts` doesn't match an
+   existing pending entry's `ts` in the same ledger.
+6. Validate operator identity at write time — see §17.6.
+
+Readers reconstruct ledger state by folding the stream
+chronologically. An entry is **open** if it is pending and no
+later triaged entry references its `ts` via `supersedes_ts`.
+
+### 17.3 Calibration Triggers
+
+A domain opts into calibration via a `calibration_trigger`
+discriminated union in its `brain-registry.json`
+`domain_definitions` block. The four variants:
+
+```
+CalibrationTrigger:
+  - OutOfExpectedRange { min: u8, max: u8 }
+  - SignalClassFired { signal_kinds: [string] }
+  - Manual
+  - TrajectorySwing { window_days, magnitude }   # v2 candidate; deferred
+```
+
+**`OutOfExpectedRange { min, max }`** — the Brain appends a
+`pending` entry whenever the domain's effective_score is `< min`
+OR `> max`. Threshold-driven; matches the judge-integrity-ledger
+pattern (red-miss when `judge_score > expected_ceiling`). Operators
+SHOULD only configure this trigger AFTER observing the domain's
+actual score distribution for at least one calibration period
+(otherwise the trigger fires on legitimate signal collapses, and
+the operator burns triage cycles labeling them all `confirmed →
+no-action`).
+
+**`SignalClassFired { signal_kinds: [string] }`** — the Brain
+appends a `pending` entry when the domain emits a CMDB finding
+whose name matches one of the listed signal_kinds, or when an
+extras field key matches. Event-driven; matches the
+supply-chain-decision-ledger pattern (`auto_create_from_vigilance`
+fires on Layer 2 finding kinds). Operators configure this when
+the domain's score-volatility is too high for threshold-based
+triggers but specific signal classes warrant calibration review.
+
+**`Manual`** — the Brain emits NO automated entries against this
+domain; entries are operator-created via the
+`neurogrim domain-calibration triage --manual` CLI. **Default for
+new domains.** The safe-by-default posture: a domain that has not
+yet been observed long enough to know its score distribution OR
+its signal taxonomy starts in `Manual` mode. Promotion to
+threshold/signal-based requires observed-distribution evidence.
+
+**`TrajectorySwing`** — DEFERRED to v2. Triggers on Δ-from-rolling-
+baseline (§7 trajectory primitive integration). Avoids the
+static-prior problem of `OutOfExpectedRange` by self-tuning to the
+domain's actual distribution; v2 candidate once §7 + the trigger
+plumbing are integrated.
+
+A conformant Brain MUST default a domain's `calibration_trigger`
+to `Manual` when:
+
+- The field is absent from the registry, AND
+- The Brain's `enable_calibration_writes` config is `true`.
+
+A conformant Brain MUST NOT auto-fire entries when
+`enable_calibration_writes` is `false` (the global gate) OR when
+the domain's `calibration_trigger` is `Manual`.
+
+### 17.4 Per-family Extension
+
+The unified schema's `domain_family` field is an enum. Initial v1
+value: `domain-calibration`. Future families add an enum value
+AND a per-family `definitions` block dispatched via JSON Schema
+`if/then/else` keyed on `domain_family`. Each per-family
+definition uses `additionalProperties: false` on its own slice.
+**New families add a definition; they do not relax the schema.**
+
+For v1, the `domain-calibration` family has no per-family fields
+beyond the shared core. The dispatch machinery is reserved for
+when a second family adopts the unified schema (e.g., a future
+governance-calibration family that needs to record gate-override
+metadata; or a cultural-substrate-calibration family that needs
+to record value-violation context).
+
+### 17.5 Schema
+
+Canonical: `schemas/domain-calibration-ledger-v1.schema.json`.
+
+Required fields on every entry: `ts`, `schema_version` (const
+"1"), `entry_kind` (`pending` | `triaged`), `domain` (string,
+minLength 1, registry-validated by writer), `domain_family`
+(enum).
+
+Pending entries additionally require `trigger_signal_kind` and
+`actual_score`. Optional: `expected_score_lower`,
+`expected_score_upper`, `context_notes`, `context_artifacts[]`.
+
+Triaged entries additionally require `supersedes_ts`,
+`triage_decision` (enum: `confirmed` | `mislabeled` | `gap` |
+`no-action`), `human_operator` (minLength 1), `human_notes`
+(minLength 1). Optional: `audit_artifacts[]`.
+
+The four-class `triage_decision` enum is intentionally coarse —
+finer categorization belongs in `human_notes` (verbatim,
+auditable):
+
+- **`confirmed`** — the signal is real and actionable; operator
+  intends to act on the underlying problem.
+- **`mislabeled`** — the signal is false; sensor was wrong;
+  calibration adjustment may be warranted.
+- **`gap`** — the signal is real but no domain/rubric mechanism
+  exists to act on it. Registers a follow-on need (e.g., "the
+  domain is missing a sub-sensor that would catch this class").
+- **`no-action`** — operator reviewed and concluded no action is
+  warranted at this time. (Distinct from `mislabeled` in that
+  the signal was *correct* but the situation doesn't require a
+  response.)
+
+### 17.6 Operator Identity
+
+Triaged entries MUST carry `human_operator: string, minLength 1`.
+The reference implementation discovers operator identity from:
+
+1. `--operator <handle>` CLI flag (highest precedence), OR
+2. `NEUROGRIM_OPERATOR` environment variable, OR
+3. Reject the write — operator identity is REQUIRED on triaged
+   entries.
+
+The `NEUROGRIM_OPERATOR` convention matches the existing
+supply-chain-decision-ledger writer (§16.4's reference impl).
+Note that judge-integrity uses `ABV_OPERATOR` and the existing
+ledgers retain their existing env vars. A future spec-promotion
+candidate is unifying all three under `BRAIN_OPERATOR` — out of
+scope for §17.
+
+Pending entries SHOULD set `human_operator: "auto"` when the
+trigger fired automatically; this matches the
+`auto_create_from_vigilance` convention in the existing
+supply-chain ledger (the 2026-04-26 PRE-RELEASE B10 fix tightened
+this from optional to required on the pending side too — operator
+identity discipline applies to every entry kind).
+
+### 17.7 Storage + Rotation
+
+Calibration ledgers live at:
+
+```
+.claude/brain/<domain>-calibration-ledger.jsonl
+```
+
+One ledger per domain (NOT per Brain — a Brain may have many
+domains and thus many ledgers). Empirically, healthy domains
+produce 0 entries — the storage cost is bounded by triage need.
+A domain with 50 triage events per year + ~1 KB per entry yields
+~50 KB/year/domain. A 4-Brain × 10-domain ecosystem accumulates
+~2 MB/year before rotation.
+
+A conformant implementation SHOULD rotate ledger files annually
+to `<domain>-calibration-ledger-{year}.jsonl`. Rotation is an
+implementation choice, not a normative requirement.
+
+The reference reader globs `<domain>-calibration-ledger*.jsonl`
+so rotation is transparent — readers concatenate the streams
+chronologically and fold as if they were one ledger.
+
+### 17.8 Cross-Brain Aggregation
+
+**v1 posture: NO cross-Brain calibration aggregation.**
+
+Calibration ledgers stay LOCAL to each Brain. The ecosystem Brain
+does NOT aggregate calibration health from children. Operators
+asking "are my children's calibration ledgers fresh?" address
+that question by inspecting the children's domain-calibration
+domain scores via the existing fractal-composition pipeline (§9).
+
+The high-trust nature of calibration data — operator handles,
+verbatim rationale prose, references to internal tooling —
+matches the §16.6 supply-chain-signal posture. A future v2
+A2A `domain-calibration-signal` message type with bidirectional
+opt-in is a candidate; explicitly out of scope for v1.
+
+Implementations MUST NOT auto-share calibration entries via
+A2A in conformant v1 deployments.
+
+### 17.9 The domain-calibration Sensor
+
+A Brain implementing §17 SHOULD ship a `domain-calibration`
+sensor that:
+
+1. Reads all `*-calibration-ledger*.jsonl` files under
+   `.claude/brain/`.
+2. Computes per-domain calibration health (open count vs
+   triaged count vs ledger freshness).
+3. Aggregates into a single `domain-calibration` CMDB envelope.
+4. Emits envelope-supplied confidence based on a tuple-aware
+   ledger-state signal (§3.1, v2.7+): `(has_ever_fired,
+   last_triage_age)`. Rationale: a domain with zero entries
+   ("no signal yet") and a domain with a recently-triaged entry
+   ("signal exists and is current") look identical to a
+   freshness-only metric. The tuple distinguishes them.
+
+The `domain-calibration` sensor's own calibration trigger MUST
+be hard-coded to `Manual` — automated triggers against the
+sensor's own ledger create a bootstrap-loop class of failure.
+The sensor calibrates other domains; humans calibrate it.
+
+A conformant Brain MUST default the `domain-calibration` domain
+to weight 0.0 (advisory) at v1. Promotion to non-zero weight
+requires §15.5-equivalent calibration evidence.
+
+### 17.10 Carve-out: Existing Ledgers
+
+The following ledger instances predate v2.8 and are intentionally
+NOT migrated to `domain-calibration-ledger-v1`:
+
+- **`judge-integrity-ledger-v1`** (§15.3) — agent-behavior judge
+  red-miss tracking. Per-family fields (scenario_id, red_sample_id,
+  failure_mode, judge_models, per_judge_scores, judge_findings,
+  judge_explanation) are richer than the unified schema captures.
+- **`domain-promotion-ledger-v1`** (§15.5) — domain promotion
+  audit decisions. Per-family fields (evidence_bundle reference,
+  audit_status, rebalance details) are richer than the unified
+  schema captures.
+- **`supply-chain-decision-ledger-v1`** (§16.4) — Layer 3
+  supply-chain review decisions. Per-family fields (PackageRef,
+  triggering_signals[], agent_findings[], remediation_action,
+  expires_at) are richer than the unified schema captures.
+
+Each of these retains its own schema, its own on-disk file, its
+own writer convention, and its own §-section governance. The
+unified schema's existence does NOT obligate migration — the
+carve-out is normative.
+
+Future spec evolution MAY consolidate any of the three under
+`domain-calibration-ledger-v2` (or later), but such a
+consolidation requires its own METHODOLOGY-EVOLUTION entry and
+explicit migration guidance. This section's stance: additivity is
+the discipline; convergence is a future option, not an
+obligation.
+
+### 17.11 Reference Implementation
+
+Reference Rust implementation: NeuroGrim crates
+`neurogrim-core::calibration_ledger` (writer + reader),
+`neurogrim-sensory::domain_calibration` (the meta-observer
+sensor), and `neurogrim-cli::commands::domain_calibration` (the
+operator triage CLI). Per-Brain registries declare the
+`domain-calibration` domain at advisory weight 0.0 in v1.
+
+Reference operator workflow:
+
+```
+$ NEUROGRIM_OPERATOR=alice neurogrim domain-calibration list \
+    --project-root . --open-only
+# … shows pending entries awaiting triage …
+
+$ NEUROGRIM_OPERATOR=alice neurogrim domain-calibration triage \
+    --domain test-health \
+    --pending-ts 1777310000.0 \
+    --decision no-action \
+    --notes "Score drop was a deliberate test-suite restructure; recalibrate next sprint."
+```
+
+See METHODOLOGY-EVOLUTION (planned: §16) for the broader
+rationale: §17 generalizes a pattern that emerged across three
+independent epics (judge-integrity, domain-promotion,
+supply-chain-decision) and formalizes it as a methodology piece.
+The rename from "self-coherence" (master plan) to
+"domain-calibration" (this section) was driven by the §8
+correlation-coherence collision surfaced during the Layer-2
+review.
+
+---
+
 ## Appendix A: Agent Output Schema
 
 > **Canonical location:** `schemas/agent-output-v1.schema.json`
@@ -2601,7 +2996,11 @@ mapping is language-agnostic — implementations choose their own file structure
 | **supply-chain-sca** | Layer 1 mechanical-SCA domain (§16.2). Lockfile parsing + vulnerability-database query; default weight 0.0 in v1 (advisory). Reference implementation is NeuroGrim's `supply_chain_sca/` module. |
 | **supply-chain-signal** | A2A message type (v2.6) carrying supply-chain findings between peer Brains under bidirectional opt-in consent. Payload conforms to `a2a-supply-chain-signal-v1.schema.json`. See §16.6. |
 | **supply-chain-vigilance** | Layer 2 deep-signal-vigilance domain (§16.3). Probabilistic findings on publishing behavior; default weight 0.0 in v1 (advisory). |
-| **supply-chain decision ledger** | Append-only `supply-chain-decision-ledger.jsonl` matching `supply-chain-decision-ledger-v1.schema.json`. Records Layer 3 review decisions (accept / reject / pin-to-last-good / review-pending / review-triaged) with operator identity + rationale. See §16.4 + §16.7. |
+| **supply-chain decision ledger** | Append-only `supply-chain-decision-ledger.jsonl` matching `supply-chain-decision-ledger-v1.schema.json`. Records Layer 3 review decisions (accept / reject / pin-to-last-good / review-pending / review-triaged) with operator identity + rationale. See §16.4 + §16.7. One of three pre-v2.8 ledger instances of the 2-phase Pending → Triaged pattern (alongside **judge-integrity ledger** + **promotion ledger**); carved out from the v2.8 unified schema per §17.10. |
+| **domain-calibration ledger** | Append-only `<domain>-calibration-ledger.jsonl` files matching `domain-calibration-ledger-v1.schema.json`. Records per-domain automated-vs-human-decision disagreement entries (pending) and operator triage decisions (triaged). v2.8+. Triggers via discriminated `CalibrationTrigger` union (OutOfExpectedRange / SignalClassFired / Manual). 4-class triage_decision enum (confirmed/mislabeled/gap/no-action). One ledger per domain (NOT per Brain). LOCAL to each Brain — no A2A aggregation in v1. See §17 (entire). |
+| **domain-calibration sensor** | The CMDB sensor that reads `*-calibration-ledger*.jsonl` files and reports per-domain calibration health (open vs triaged counts; ledger freshness; tuple-aware (has_ever_fired, last_triage_age) confidence). Emits envelope-supplied confidence per spec §3.1 v2.7+. Hard-coded `Manual` calibration trigger to close the bootstrap-loop class of failure. Default weight 0.0 (advisory) in v1. See §17.9. |
+| **judge-integrity ledger** | Pre-v2.8 instance of the 2-phase Pending → Triaged ledger pattern (matches `judge-integrity-ledger-v1.schema.json`). Records judge red-misses + operator triage. Per-family fields: scenario_id, red_sample_id, failure_mode, judge_models, judge_findings, judge_explanation. Carved out from the v2.8 unified schema per §17.10. See §15.3 + §15.4. |
+| **promotion ledger** | Pre-v2.8 instance of the 2-phase Pending → Triaged ledger pattern (matches `domain-promotion-ledger-v1.schema.json`). Records domain promotion audit decisions. Per-family fields: evidence_bundle reference, audit_status, rebalance details. Carved out from the v2.8 unified schema per §17.10. See §15.5. |
 | **Runtime** | One of three truth layers (§2.2). Snapshots of external system state — CMDB files written by sensory tools. Accurate at capture time, decays with age via confidence decay (§4.4). |
 | **Safety invariant** | A rule that cannot be overridden by confidence or effectiveness -- e.g., "destroy is always blocked". |
 | **Sensory tool** | A script or program that observes external state and writes a CMDB file. "Sensory tools" (plural) refers to the set of all such tools a Brain consumes. |
