@@ -1,10 +1,71 @@
 # LSP Brains Specification
 
-**Version:** 2.10
+**Version:** 2.11
 **Date:** 2026-04-27
 **Status:** Active
 
 ### Changelog
+
+- **v2.11 (2026-04-27):** Operator-calibration primitive (Brains-2.0
+  E-B2-6).
+
+  Per-Brain operator-calibration captures the operator's judgment of
+  agent skill invocations as append-only disposition records on the
+  existing invocation-ledger (additive; NOT a new ledger). New
+  schema `invocation-ledger-v1.schema.json` formalizes the existing
+  skill-record shape AND introduces a sibling DispositionEntry row
+  kind discriminated via `oneOf`. Closed-set 4-entry vocabulary:
+  `accepted`, `rejected`, `modified`, `superseded` — same additive
+  promotion path as §5.4.1 hat-contract tool names + §16.8
+  trust-budget enums.
+
+  RFC 2119: `neurogrim disposition record` CLI is RECOMMENDED
+  (SHOULD), not MUST. Brains lacking the disposition CLI remain
+  conformant; the operator-calibration sensor reports
+  `low_confidence` until N_MIN=20 dispositions accrue. Hard-gate
+  elevation deferred to v2 per BACKLOG B-23 — gated on calibration
+  data + §15.5 evidence-bundle review (NOT automated promotion).
+
+  **Privacy contract reaffirmed (BR-5).** Disposition records
+  preserve the invocation-ledger's v1 privacy invariant: closed-set
+  `disposition_kind` + ts + invocation_id + human_operator ONLY.
+  Implementations MUST NOT capture free-text justification on
+  disposition records at v1 (the schema's `additionalProperties:
+  false` on DispositionEntry enforces this structurally). v2 may
+  reopen with strict prose-only-no-paths discipline + dedicated
+  opt-in.
+
+  **Recursion guard (MUST).** The operator-calibration sensor's own
+  findings (kind prefix `operator_calibration:*`) MUST NOT be valid
+  disposition targets. Implementations MUST verify (e.g., the CLI
+  rejects matching `--invocation-id` references at parse time).
+
+  **Aggregation-only export (MUST).** The operator-calibration
+  sensor's CMDB output MUST emit aggregate totals only — no
+  per-invocation rows, no per-skill breakdowns at v1.
+
+  **Sample-size disclosure (MUST).** The sensor MUST report
+  `dispositioned_count` AND `total_invocations` as exported
+  variables alongside any score. Score MAY be `null` when
+  `dispositioned_count < N_MIN`.
+
+  **Per-Brain scope (LOCAL).** Implementations MUST NOT auto-share
+  disposition entries via A2A in conformant v1 deployments
+  (mirrors §17.8). Cross-Brain `operator-calibration-signal` is a
+  v2 candidate per BACKLOG B-23.
+
+  Out of scope at v1: auto-inference from session traces (requires
+  invocation-ledger schema bump deferred to B-23, parallel to
+  E-B2-3 v2 runtime hat-enforcement and E-B2-4 v2 runtime shell-out
+  tracking); per-skill calibration breakdown; hat-scoped
+  disposition; A2A signal type; per-operator score breakdown for
+  multi-operator topologies.
+
+  Additive only — no v2.10 conformance claim invalidated.
+  Reference implementation: NeuroGrim crate
+  `neurogrim-sensory::operator_calibration` + CLI
+  `neurogrim disposition record`. Per-epic Layer-2 plan in
+  `~/.claude/plans/brains-2-0-e-b2-6-layer-2.md`.
 
 - **v2.10 (2026-04-27):** Trust budget primitive (Brains-2.0 E-B2-4).
 
@@ -2750,10 +2811,13 @@ this glossary disambiguates them up front:
 | **Adversarial audit** (red-mode) | Running a calibrator against red samples to verify the judge can detect known failure modes (one-sided ceiling check) | §15.3 |
 | **Promotion audit** | The evidence-bundle review that promotes an advisory-weight domain to non-zero weight | §15.5 |
 | **Judge-integrity audit** | The append-only ledger of red-misses + operator triage of those misses | §15.3 + §15.4 |
-| **Domain calibration** (this section) | The append-only per-domain ledger of automated-vs-human-decision disagreement; the topic of §17 | §17 |
+| **Domain calibration** (§§17.1–17.11) | The append-only per-domain ledger of automated-vs-human-decision disagreement | §17 |
+| **Operator calibration** (§17.12, v2.11+) | The append-only ledger of operator dispositions of agent skill invocations (sibling family of domain calibration; per-invocation rather than per-domain) | §17.12 |
 
 When this section says "calibration" without qualification, it
-refers to the §17 domain-calibration sense.
+refers to the §17 domain-calibration sense (§§17.1–17.11). The
+operator-calibration sense (§17.12) is the sibling family
+introduced in v2.11.
 
 ### 17.2 The 2-phase Ledger Pattern
 
@@ -3051,6 +3115,176 @@ The rename from "self-coherence" (master plan) to
 correlation-coherence collision surfaced during the Layer-2
 review.
 
+### 17.12 Operator-calibration ledger family (v2.11+)
+
+§§17.1–17.11 govern **domain calibration** — how does the operator's
+evaluation relate to a domain's automated score? **Operator
+calibration** (this section) is the sibling family that asks the
+inverse question: how does the operator's evaluation relate to an
+agent skill's invocation? Both families share the storage convention
+(`.claude/brain/`-prefixed JSONL), the operator-identity discipline
+(NEUROGRIM_OPERATOR per §17.6), advisory weight 0.0 default, and the
+v1→v2 calibration-gated promotion path (§15.5 evidence-bundle).
+
+The two families are structurally distinct:
+
+- **Domain calibration** (§§17.1–17.11): per-domain, file-per-domain
+  at `.claude/brain/<domain>-calibration-ledger.jsonl`. Per-domain
+  calibration triggers + 2-phase Pending/Triaged supersedes pattern.
+- **Operator calibration** (this subsection, §17.12): per-skill-
+  invocation, single-file at `.claude/brain/invocation-ledger.jsonl`
+  (the existing high-frequency append-only ledger that already
+  records skill invocations per Axis 4 v1, 2026-04-22). Single-row-
+  kind disposition records linked back to skill records via
+  `invocation_id`.
+
+#### 17.12.1 Schema
+
+The invocation ledger conforms to `invocation-ledger-v1.schema.json`
+(NEW v2.11+). The schema's top-level `oneOf` discriminates two
+entry kinds:
+
+- **`SkillEntry`** — the existing skill-invocation record (written
+  by the PostToolUse hook per the Axis 4 v1 documentation in
+  `NeuroGrim/docs/invocation-ledger.md`). Required: `schema_version`,
+  `ts`, `type` (const `"skill"`), `name`, `session_id`,
+  `invocation_id`. Optional: `disposition` (forward-compat for
+  writers that capture the disposition at invocation time).
+- **`DispositionEntry`** — NEW. Required: `schema_version`, `ts`,
+  `entry_kind` (const `"disposition"`), `invocation_id` (references
+  a SkillEntry's `invocation_id`), `disposition_kind`,
+  `human_operator`. Both row kinds enforce `additionalProperties:
+  false` — extensions land in a per-entry `extensions` object
+  rather than ad-hoc top-level fields.
+
+#### 17.12.2 Closed-set disposition vocabulary
+
+Implementations MUST validate `disposition_kind` against the
+following closed set (4 entries, additive promotion path same as
+§5.4.1 hat-contract tool names):
+
+| Value | Meaning |
+|-------|---------|
+| `accepted` | Operator took the suggestion as-is. |
+| `rejected` | Operator did not take the suggestion. |
+| `modified` | Operator took the suggestion with changes. |
+| `superseded` | Operator chose a different path that addressed the same underlying need. |
+
+New vocabulary terms require a spec change with explicit
+METHODOLOGY-EVOLUTION entry; implementations MUST reject unknown
+vocabulary terms.
+
+#### 17.12.3 Privacy contract (BR-5)
+
+Disposition records preserve the v1 invocation-ledger privacy
+invariant declared in `NeuroGrim/docs/invocation-ledger.md`:
+**closed-set vocabulary + ts + invocation_id + operator handle
+ONLY.** Implementations MUST NOT capture free-text justification on
+disposition records at v1; the schema's `additionalProperties:
+false` on DispositionEntry enforces this structurally. v2 may
+re-open with strict prose-only-no-paths discipline + dedicated
+opt-in flag (BACKLOG B-23).
+
+#### 17.12.4 Capture mechanism
+
+Disposition records MUST be captured via explicit operator action
+at v1 (no auto-inference from session traces). The reference
+implementation provides a CLI subcommand:
+
+```
+$ NEUROGRIM_OPERATOR=alice neurogrim disposition record \
+    --invocation-id <id> \
+    --kind <accepted|rejected|modified|superseded> \
+    --project-root .
+```
+
+Auto-inference of disposition from observed follow-up actions
+(operator immediately invoked another skill, edited a file, etc.)
+is OUT OF SCOPE for v1 and is a v2 candidate per BACKLOG B-23.
+v1's explicit-only posture is structural: the existing PostToolUse
+hook is `Skill`-only, so the substrate to observe follow-up
+Bash/Edit/Write actions does not yet exist.
+
+#### 17.12.5 Recursion guard (MUST)
+
+The operator-calibration sensor's own findings MUST NOT be valid
+disposition targets. Concretely: implementations MUST reject
+`--invocation-id` references whose source `name` matches the
+sensor's finding-kind prefix (`operator_calibration:*`).
+Recursion-loop closure mirrors the §17.9 `Manual` calibration
+trigger discipline for the domain-calibration sensor's own family.
+
+#### 17.12.6 Aggregation-only export (MUST)
+
+The operator-calibration sensor's CMDB output MUST emit aggregate
+totals only — no per-invocation rows, no per-skill breakdowns at
+v1. Per-skill calibration breakdown is a v2 candidate per BACKLOG
+B-23. Aggregation discipline is the BR-5 privacy mitigation that
+keeps disposition data from flowing beyond the per-Brain CMDB.
+
+#### 17.12.7 Sample-size disclosure (MUST)
+
+The sensor MUST report `dispositioned_count` AND `total_invocations`
+as exported variables alongside any score. The score MAY be `null`
+when `dispositioned_count < N_MIN` (reference value: N_MIN=20,
+mirroring `LOW_CONFIDENCE_TOTAL_INVOCATIONS` in
+`capability-hygiene`'s ledger reader). Below N_MIN, the sensor
+MUST emit an `operator_calibration:low_confidence` advisory finding
+to surface the small-sample state explicitly. Selection bias
+(operators disposition rare events; routine accept-all use is
+invisible) is the dominant interpretive risk; the sample-size
+disclosure surface is the structural mitigation.
+
+#### 17.12.8 Per-Brain scope (LOCAL)
+
+Operator-calibration data is LOCAL to each Brain. Implementations
+MUST NOT auto-share disposition entries via A2A in conformant v1
+deployments (mirrors §17.8 lock for domain-calibration). A
+cross-Brain `operator-calibration-signal` A2A message type is a v2
+candidate per BACKLOG B-23, parallel to the deferred
+`hat-contract-signal` (§5.4.1), `trust-budget-signal` (§16.8), and
+`domain-calibration-signal` (§17.8) types.
+
+#### 17.12.9 The operator-calibration sensor
+
+The reference implementation provides a sensor at
+`neurogrim-sensory::operator_calibration` that reads the same
+`.claude/brain/invocation-ledger.jsonl` file consumed by
+`capability-hygiene`'s `read_invocation_ledger()` reader. The two
+sensors have separation-of-concerns by construction: the existing
+reader silently skips DispositionEntry rows (no `name` field at
+the skill level); the new sensor recognizes both row kinds and
+groups disposition rows by `disposition_kind`.
+
+The score model:
+
+```
+dispositioned_count = count of DispositionEntry rows
+total_invocations = count of SkillEntry rows
+accepted_count = count of dispositioned rows where disposition_kind == "accepted"
+
+If dispositioned_count < N_MIN (20):
+    score = null
+    findings += operator_calibration:low_confidence (advisory)
+Else:
+    score = round(100 * accepted_count / dispositioned_count)
+```
+
+Non-dispositioned skill invocations are NOT in the denominator —
+they are "not yet judged," not "neutral." This is the structural
+fix for selection bias.
+
+#### 17.12.10 v1→v2 promotion
+
+Promotion of operator-calibration's advisory weight 0.0 to non-zero
+weight requires §15.5-equivalent calibration evidence: a ≥30-day
+collection window AND ≥50 dispositions across a representative
+session population, reviewed via the §15.5 promotion-evidence-
+bundle pattern. Automated promotion is explicitly out of scope —
+the sensor's own data informs whether to elevate the sensor's
+findings to gating power, which creates a circular accountability
+that human review must resolve.
+
 ---
 
 ## Appendix A: Agent Output Schema
@@ -3236,6 +3470,8 @@ mapping is language-agnostic — implementations choose their own file structure
 | **Derived** | One of three truth layers (§2.2). Computed from source and runtime artifacts on demand, never committed, always reproducible. Gitignored. Re-computation is cheap; the derived product is a projection of its inputs. |
 | **Culture Invariant** | A value in the cultural substrate that can only tighten, never loosen — analogous to safety invariants in autonomy resolution (§5.5). Five canonical: positivity, integrity, honesty, critical-but-kind, respect. |
 | **Culture Manifest** | The `culture.yaml` document (validated against `culture-manifest-v1.schema.json`) declaring the canonical values and their application. Version-stamped; distributed as identical copies. |
+| **Disposition kind** | One of four closed-set values (`accepted`, `rejected`, `modified`, `superseded`) that an operator may assign to an agent skill invocation (v2.11+). Vocabulary additivity follows the same discipline as §5.4.1 hat-contract tool names — new terms require a spec change. See §17.12.2. |
+| **Disposition record** | An append-only entry on the invocation-ledger (kind `DispositionEntry` per `invocation-ledger-v1.schema.json`, v2.11+) recording the operator's judgment of a specific agent skill invocation. Required fields: `schema_version`, `ts`, `entry_kind`, `invocation_id`, `disposition_kind`, `human_operator`. Free-text justification is FORBIDDEN at v1 (BR-5 privacy contract). See §17.12.1 + §17.12.3. |
 | **Domain** | A named aspect of project health (e.g., "code-quality", "test-health"). Each domain has a score, confidence, and weight. |
 | **Dual brain** | Architecture where a local brain and external brain share state via a common protocol (Section 10). |
 | **Ecosystem** | Multiple Brains composed fractally, where a parent Brain aggregates scores from child Brains (Section 9). |
@@ -3248,6 +3484,7 @@ mapping is language-agnostic — implementations choose their own file structure
 | **LSP Brains** | The language-agnostic specification for agent nervous systems (this document). |
 | **MCP** | Model Context Protocol. JSON-RPC based protocol for tool discovery and invocation between clients and servers. In LSP Brains, MCP is used for (1) sensory tool discovery (Brain-as-MCP-client, §3.7), (2) Brain exposure to LLM agents (Brain-as-MCP-server, Appendix F). MCP is NOT used for Brain-to-Brain peer communication — see A2A (§13, Appendix G). |
 | **NeuroGrim** | The reference implementation of LSP Brains, written in Rust. |
+| **Operator calibration** | A first-class observability primitive (v2.11+) that captures the operator's judgment of agent skill invocations as append-only **disposition records** on the existing invocation-ledger. Sibling family of **domain calibration** (§17): both share storage convention + operator-identity discipline + advisory weight 0.0 default; different observation surface (per-skill-invocation vs per-domain). v1 explicit-only via `neurogrim disposition record` CLI; auto-inference deferred to v2 per BACKLOG B-23. See §17.12. |
 | **Output modes** | The Brain's display modes (agent, score, health, trend, validate, propose, plan — §6.6, §11.1). Each targets a different consumer: JSON for machines, terse lines for humans, detailed reports for operators. |
 | **Peer Brain** | Another Brain with which this Brain communicates via A2A. In fractal composition (§9): parent/child. In dual brain (§10): local/external. |
 | **Persona** | A human user role that controls output verbosity and field filtering. Distinct from **persona hat** (the agent-facing operational lens — §5.4.1). |
