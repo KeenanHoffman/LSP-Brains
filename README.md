@@ -3,6 +3,10 @@
 A language-agnostic specification for giving AI agents continuous project health awareness
 through sensory tools, scoring contracts, trajectory intelligence, and gated governance.
 
+LSP Brains is **a declared overlay of project-shaped commitments on a general-purpose
+statistical engine.** The LLM provides cognition; the Brain provides what to be cognizant
+of — a project's portable self-knowledge that any agent (LLM-shaped or otherwise) can read.
+
 **New here?** Read [INTRO.md](INTRO.md) first — a five-page, problem-first introduction
 to the pattern before the spec's normative detail.
 

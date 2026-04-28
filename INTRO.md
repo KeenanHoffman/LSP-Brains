@@ -4,6 +4,19 @@
 
 ---
 
+## What it is
+
+LSP Brains is **a declared overlay of project-shaped commitments on a general-purpose
+statistical engine.** The LLM provides cognition; the Brain provides what to be
+cognizant of. The two compose orthogonally: an agent without a Brain is a fluent
+stranger; an agent without an LLM is a watching constitution; together they're a
+colleague — fluent and committed to the project's specifics.
+
+The rest of this document walks through the problem the pattern addresses, the
+pattern itself, and what success looks like.
+
+---
+
 ## 1. The problem
 
 Modern software projects drift in ways no single person sees.

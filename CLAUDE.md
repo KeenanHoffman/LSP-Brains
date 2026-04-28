@@ -1,9 +1,11 @@
 # LSP-Brains — Agent Guide
 
-LSP-Brains is the **specification** for building agent nervous systems. It is the
-methodology; `NeuroGrim` is the reference implementation. This repo has its own
-Brain that scores **specification quality** — the first Brain in the ecosystem that
-scores a methodology rather than a codebase. Ideas as code.
+LSP-Brains is the **specification** for building agent nervous systems: **a declared
+overlay of project-shaped commitments on a general-purpose statistical engine** — the
+LLM provides cognition; the Brain provides what to be cognizant of. This repo defines
+how to build that overlay; `NeuroGrim` is the reference implementation. This repo has
+its own Brain that scores **specification quality** — the first Brain in the ecosystem
+that scores a methodology rather than a codebase. Ideas as code.
 
 ## Repository Structure
 

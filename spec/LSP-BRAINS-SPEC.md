@@ -1,5 +1,11 @@
 # LSP Brains Specification
 
+> **A declared overlay of project-shaped commitments on a general-purpose statistical
+> engine.** The LLM provides cognition; the Brain provides what to be cognizant of.
+> This specification defines the language-agnostic primitives — sensory tools, scoring
+> contracts, governance gates, trajectory intelligence, and peer-Brain coordination.
+> NeuroGrim is the Rust reference implementation.
+
 **Version:** 3.0
 **Date:** 2026-04-27
 **Status:** Stable v3.0
