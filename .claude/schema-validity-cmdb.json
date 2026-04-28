@@ -1,18 +1,18 @@
 {
   "meta": {
     "updated_by": "check-schema-validity",
-    "updated_at": "2026-04-25T21:13:09.702962Z",
+    "updated_at": "2026-04-28T05:28:29.777442Z",
     "source": "parse of schemas/*.schema.json: draft-07 conformance, internal $ref resolution",
     "schema_version": "1"
   },
   "score": 100,
-  "updated_at": "2026-04-25T21:13:09.702962Z",
+  "updated_at": "2026-04-28T05:28:29.777442Z",
   "findings": [
     {
       "name": "finding-000",
       "status": "info",
       "points": 0,
-      "detail": "Schemas scanned: 14"
+      "detail": "Schemas scanned: 20"
     },
     {
       "name": "finding-001",
@@ -30,7 +30,7 @@
       "name": "finding-003",
       "status": "info",
       "points": 0,
-      "detail": "$ref occurrences: 31"
+      "detail": "$ref occurrences: 50"
     },
     {
       "name": "finding-004",
@@ -40,7 +40,7 @@
     }
   ],
   "exported_variables": {
-    "schemas:count": 14,
+    "schemas:count": 20,
     "schemas:invalid_count": 0,
     "schemas:broken_refs": 0
   }

@@ -1,36 +1,36 @@
 {
   "meta": {
     "updated_by": "check-rfc-2119-compliance",
-    "updated_at": "2026-04-25T21:17:24.039817Z",
+    "updated_at": "2026-04-28T05:28:33.048134Z",
     "source": "scan of spec numbered sections for lowercase will/should/must vs RFC 2119 uppercase usage",
     "schema_version": "1"
   },
-  "score": 95,
-  "updated_at": "2026-04-25T21:17:24.039817Z",
+  "score": 92,
+  "updated_at": "2026-04-28T05:28:33.048134Z",
   "findings": [
     {
       "name": "finding-000",
       "status": "info",
       "points": 0,
-      "detail": "MUST occurrences: 186"
+      "detail": "MUST occurrences: 270"
     },
     {
       "name": "finding-001",
       "status": "info",
       "points": 0,
-      "detail": "SHOULD occurrences: 68"
+      "detail": "SHOULD occurrences: 96"
     },
     {
       "name": "finding-002",
       "status": "info",
       "points": 0,
-      "detail": "MAY occurrences: 39"
+      "detail": "MAY occurrences: 55"
     },
     {
       "name": "finding-003",
       "status": "warning",
       "points": 0,
-      "detail": "Ambiguous-normative (lowercase will/should/must in numbered sections): 5"
+      "detail": "Ambiguous-normative (lowercase will/should/must in numbered sections): 8"
     },
     {
       "name": "finding-004",
@@ -42,31 +42,49 @@
       "name": "finding-005",
       "status": "info",
       "points": 0,
-      "detail": "  \u00a73.8: 'will' in: still conformant \u2014 confidence decay will surface quality issues eventually, just more"
+      "detail": "  \u00a73.1: 'should' in: per \u00a74.4. Most sensors should omit this field; opt-in is intended for"
     },
     {
       "name": "finding-006",
       "status": "info",
       "points": 0,
-      "detail": "  \u00a73.8: 'must' in: methodology nonetheless strongly encourages the feedback loop: the observing layer must"
+      "detail": "  \u00a73.8: 'will' in: still conformant \u2014 confidence decay will surface quality issues eventually, just more"
     },
     {
       "name": "finding-007",
       "status": "info",
       "points": 0,
-      "detail": "  \u00a715.1: 'must' in: The observing layer must itself be observable (VISION principle #18: \"sensors need"
+      "detail": "  \u00a73.8: 'must' in: methodology nonetheless strongly encourages the feedback loop: the observing layer must"
     },
     {
       "name": "finding-008",
       "status": "info",
       "points": 0,
+      "detail": "  \u00a715.1: 'must' in: The observing layer must itself be observable (VISION principle #18: \"sensors need"
+    },
+    {
+      "name": "finding-009",
+      "status": "info",
+      "points": 0,
       "detail": "  \u00a715.1: 'must' in: sensors\"); the agents running the sensors must themselves be scorable (VISION"
+    },
+    {
+      "name": "finding-010",
+      "status": "info",
+      "points": 0,
+      "detail": "  \u00a717.1: 'will' in: spec. Operators reading \u00a717 in isolation will encounter all four;"
+    },
+    {
+      "name": "finding-011",
+      "status": "info",
+      "points": 0,
+      "detail": "  \u00a717.12: 'must' in: that human review must resolve."
     }
   ],
   "exported_variables": {
-    "rfc2119:ambiguous_count": 5,
-    "rfc2119:must_count": 186,
-    "rfc2119:should_count": 68,
-    "rfc2119:may_count": 39
+    "rfc2119:ambiguous_count": 8,
+    "rfc2119:must_count": 270,
+    "rfc2119:should_count": 96,
+    "rfc2119:may_count": 55
   }
 }
