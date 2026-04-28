@@ -2851,9 +2851,21 @@ pattern-aggregation-ledger and emits aggregate observability data.
 Score is advisory floor 100 (federation is INFORMATION, not health).
 Findings: `federated_patterns:no_active_peers`,
 `federated_patterns:peer_inactive_30d`,
-`federated_patterns:high_drop_rate`, `federated_patterns:low_confidence`.
+`federated_patterns:high_drop_rate`, `federated_patterns:low_confidence`,
+`federated_patterns:cross_peer_co_occurrence`.
 All advisory weight 0.0 at v1; per Q13 + Q17 lock, no automated
 promotion to gating.
+
+`federated_patterns:cross_peer_co_occurrence` (added v3.1) fires when
+≥2 distinct anonymized origins emit `vigilance-pattern` findings
+sharing a feature_vector signature (`severity_class` +
+`observation_window_days`) within the rolling 7-day window. Multiple
+peers independently flagging similar concerns is the operator-
+actionable signal that federation-as-intelligence is meant to
+surface. Detail field is aggregate-only (peer count + severity +
+window) — no per-peer hashes, no per-row data. Closed-set additivity
+per Q17 lock; same aggregation-only export discipline as the other
+four findings.
 
 **v1→v2 promotion.** No automated promotion to hard gates.
 Federated patterns are observability-only at v1. v2 candidates per

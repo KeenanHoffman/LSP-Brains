@@ -1,12 +1,12 @@
 {
   "meta": {
     "updated_by": "check-glossary-freshness",
-    "updated_at": "2026-04-28T06:17:59.068643Z",
+    "updated_at": "2026-04-28T06:26:38.748570Z",
     "source": "scan of spec prose for **bold** terms vs Appendix E glossary rows",
     "schema_version": "1"
   },
   "score": 84,
-  "updated_at": "2026-04-28T06:17:59.068643Z",
+  "updated_at": "2026-04-28T06:26:38.748570Z",
   "findings": [
     {
       "name": "finding-000",

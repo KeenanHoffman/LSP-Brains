@@ -1,12 +1,12 @@
 {
   "meta": {
     "updated_by": "check-link-integrity",
-    "updated_at": "2026-04-28T06:17:55.149071Z",
+    "updated_at": "2026-04-28T06:26:39.733027Z",
     "source": "scan of spec prose for \u00a7N / Section N / Appendix X references vs actual headings",
     "schema_version": "1"
   },
   "score": 100,
-  "updated_at": "2026-04-28T06:17:55.149071Z",
+  "updated_at": "2026-04-28T06:26:39.733027Z",
   "findings": [
     {
       "name": "finding-000",
