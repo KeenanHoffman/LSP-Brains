@@ -17,7 +17,7 @@
   stable consolidated v3.0 baseline. **No section-content changes.** All seven
   Brains-2.0 primitives (confidence as first-class envelope §3.8, self-coherence
   + domain-calibration ledgers §17, hat-as-formal-contract §5.4.1, trust-budget
-  §16.8, METH-EV §16 multi-round assessment, operator-calibration §17.12,
+  §16.8, METHODOLOGY-EVOLUTION §16 multi-round assessment, operator-calibration §17.12,
   federated patterns A2A §16.6.1) ship advisory (weight 0.0) across all four
   Brains in the ecosystem. v3.0 is **additive over v2.x**; deprecation track
   deferred to v4.0 (no symbols are deprecated, removed, or withdrawn at this
@@ -25,7 +25,7 @@
   records) per the Charter Amendment 2026-04-27 are post-publish observation
   windows feeding a v3.1 calibration-report gate. See
   `audit/BRAINS-2-0-RETROSPECTIVE-2026-04-27.md` for the campaign retrospective
-  and METH-EV §16 multi-round assessment cadence applied to the Brains-2.0
+  and METHODOLOGY-EVOLUTION §16 multi-round assessment cadence applied to the Brains-2.0
   campaign close.
 
 - **v2.12 (2026-04-27):** Federated patterns A2A primitive (Brains-2.0
@@ -101,7 +101,10 @@
   implementation: NeuroGrim crates `neurogrim-a2a::federated_pattern`
   + `neurogrim-sensory::federated_patterns` + CLI
   `neurogrim federated-pattern`. Per-epic Layer-2 plan in
-  `~/.claude/plans/brains-2-0-e-b2-7-layer-2.md`.
+  `~/.claude/plans/brains-2-0-e-b2-7-layer-2.md`. See
+  `METHODOLOGY-EVOLUTION.md` §15 for rationale (federated patterns
+  extend the §16.6 supply-chain A2A signal-sharing precedent under
+  the same bidirectional opt-in posture).
 
 - **v2.11 (2026-04-27):** Operator-calibration primitive (Brains-2.0
   E-B2-6).
@@ -162,7 +165,10 @@
   Reference implementation: NeuroGrim crate
   `neurogrim-sensory::operator_calibration` + CLI
   `neurogrim disposition record`. Per-epic Layer-2 plan in
-  `~/.claude/plans/brains-2-0-e-b2-6-layer-2.md`.
+  `~/.claude/plans/brains-2-0-e-b2-6-layer-2.md`. See
+  `METHODOLOGY-EVOLUTION.md` §13 for rationale (operator-calibration
+  is the first-class evidence input for governance-via-evidence
+  domain promotion).
 
 - **v2.10 (2026-04-27):** Trust budget primitive (Brains-2.0 E-B2-4).
 
@@ -200,7 +206,10 @@
   Additive only — no v2.9 conformance claim invalidated. Reference
   implementation: NeuroGrim crate `neurogrim-sensory::trust_budget`
   (lands in E-B2-4 C3). Per-epic Layer-2 plan in
-  `~/.claude/plans/brains-2-0-e-b2-4-layer-2.md`.
+  `~/.claude/plans/brains-2-0-e-b2-4-layer-2.md`. See
+  `METHODOLOGY-EVOLUTION.md` §15 for rationale (trust-budget is
+  a supply-chain primitive declaring third-party trust surface as
+  schema-typed contract).
 
 - **v2.9 (2026-04-27):** Two coordinated additions (Brains-2.0
   E-B2-3 + E-B2-5).
@@ -227,7 +236,7 @@
   MUST — hats lacking frontmatter remain conformant; the sensor
   flags absence as advisory finding only.
 
-  **(2) Multi-round pre-release assessment (E-B2-5, METH-EV §16
+  **(2) Multi-round pre-release assessment (E-B2-5, METHODOLOGY-EVOLUTION §16
   NEW).** Codifies the strict-bar → surgical-bar →
   diminishing-returns + Phase 1.5 escape-hatch retrospective
   pattern observed in the 2026-04-26 supply-chain pre-release
@@ -246,6 +255,9 @@
   E-B2-3 Component 5; schema + fixtures + conformance test
   shipped in E-B2-3 Components 1+3). Per-epic Layer-2 plans in
   `~/.claude/plans/parallel-hugging-eich.md` § E-B2-3 + § E-B2-5.
+  See `METHODOLOGY-EVOLUTION.md` §16 for rationale (multi-round
+  pre-release assessment cadence — the second of the two coordinated
+  additions in this version).
 
 - **v2.8 (2026-04-27):** Domain calibration ledgers (Brains-2.0
   E-B2-2). New §17 formalizes the per-domain calibration ledger
@@ -293,7 +305,10 @@
   conformant. Reference implementation: NeuroGrim crate
   `neurogrim-core::calibration_ledger` (lands in E-B2-2 C3).
   Per-epic Layer-2 plan in
-  `~/.claude/plans/parallel-hugging-eich.md` § E-B2-2.
+  `~/.claude/plans/parallel-hugging-eich.md` § E-B2-2. See
+  `METHODOLOGY-EVOLUTION.md` §13 for rationale (domain-calibration
+  ledgers feed governance-via-evidence; calibration-ledger pattern
+  generalizes the 2-phase Pending → Triaged shape).
 
 - **v2.7 (2026-04-27):** Confidence as a first-class envelope field
   (Brains-2.0 E-B2-1). Three coordinated additions across the
@@ -335,7 +350,10 @@
   defaults). Reference implementation: NeuroGrim crates
   `neurogrim-core`, `neurogrim-sensory`, `neurogrim-cli`.
   See per-epic Layer-2 plan in
-  `~/.claude/plans/parallel-hugging-eich.md` § E-B2-1.
+  `~/.claude/plans/parallel-hugging-eich.md` § E-B2-1. See
+  `METHODOLOGY-EVOLUTION.md` §13 for rationale (confidence as
+  first-class envelope field is the evidence-input primitive that
+  governance-via-evidence domain promotion depends on).
 
 - **v2.6 (2026-04-25):** Supply-chain awareness. New §16 formalizes
   supply-chain awareness as a first-class Brain concern, structured
@@ -485,8 +503,8 @@ software components that observe a project's state, score its health across mult
 domains, detect cross-domain patterns, and recommend actions with calibrated autonomy.
 
 **NeuroGrim** is the reference implementation of this specification, written in
-Rust. The specification defines WHAT a conformant Brain must do. The implementation
-shows HOW one Brain does it. Any implementation in any language that follows this
+Rust. The specification defines WHAT a conformant Brain is required to do. The
+implementation shows HOW one Brain does it. Any implementation in any language that follows this
 specification is equally valid.
 
 ### Related Documents
@@ -634,7 +652,7 @@ A sensory tool MUST write a JSON file containing at minimum:
    prefer it over the age-decay model (§4.4) — sensors with their own
    freshness signal know better than the aggregator's clock-based estimate.
    When absent, the Brain MUST fall back to age-decay of `meta.updated_at`
-   per §4.4. Most sensors should omit this field; opt-in is intended for
+   per §4.4. Most sensors SHOULD omit this field; opt-in is intended for
    sensors whose freshness signal is independent of clock-skew (e.g.,
    `supply-chain-vigilance` with cache-age data, `supply-chain-sca` with
    OSV cache age).
@@ -757,11 +775,11 @@ be run at the parent Brain's level that exercises the tool against live project 
 guards: a drop in score signals real drift in either the observed state or the observer.
 
 This requirement is SHOULD, not MUST, for two reasons. First, a sensor without a test is
-still conformant — confidence decay will surface quality issues eventually, just more
+still conformant — confidence decay surfaces quality issues eventually, just more
 slowly than a test would. Second, elevating this to MUST would invalidate every pre-v2.2
 sensor retroactively, which violates the additive-bumps-by-default discipline. The
-methodology nonetheless strongly encourages the feedback loop: the observing layer must
-itself be observable (VISION principle #18). See `METHODOLOGY-EVOLUTION.md` §8 for the
+methodology nonetheless strongly encourages the feedback loop: the observing layer is
+itself observable (VISION principle #18). See `METHODOLOGY-EVOLUTION.md` §8 for the
 discovery context.
 
 ---
@@ -2154,8 +2172,8 @@ the first v1 scenario that applies this mechanism to the five canonical values o
 
 Sections 1–14 specify how a Brain observes and scores a **project**. §15 specifies
 how a Brain observes and scores the **agents that operate within that project**.
-The observing layer must itself be observable (VISION principle #18: "sensors need
-sensors"); the agents running the sensors must themselves be scorable (VISION
+The observing layer MUST itself be observable (VISION principle #18: "sensors need
+sensors"); the agents running the sensors MUST themselves be scorable (VISION
 principle #19: "agents are sensed").
 
 Agent behavior is non-deterministic by construction. Two invocations of the same
@@ -3038,13 +3056,15 @@ audits; package references) are richer than the unified schema
 captures. The unified schema is for **new domains** adopting the
 calibration pattern.
 
-> **Diagram:** See `diagrams/calibration-ledger-flow.mmd` (planned;
-> reference implementation tracks).
+> **Diagram:** A flow diagram for the unified calibration ledger
+> (Pending → Triaged transitions, trigger-discriminated entry shapes)
+> is planned for a future spec revision; the reference implementation
+> tracks `domain-calibration-ledger-v1.schema.json` directly.
 
 ### 17.1 Concept
 
 The word "calibration" is used in four distinct senses across this
-spec. Operators reading §17 in isolation will encounter all four;
+spec. Operators reading §17 in isolation encounter all four;
 this glossary disambiguates them up front:
 
 | Concept | Sense | Spec Reference |
@@ -3524,7 +3544,7 @@ session population, reviewed via the §15.5 promotion-evidence-
 bundle pattern. Automated promotion is explicitly out of scope —
 the sensor's own data informs whether to elevate the sensor's
 findings to gating power, which creates a circular accountability
-that human review must resolve.
+that human review MUST resolve.
 
 ---
 

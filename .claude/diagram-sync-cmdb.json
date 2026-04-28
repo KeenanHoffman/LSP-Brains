@@ -1,18 +1,18 @@
 {
   "meta": {
     "updated_by": "check-diagram-sync",
-    "updated_at": "2026-04-28T05:28:32.043777Z",
+    "updated_at": "2026-04-28T05:35:32.346519Z",
     "source": "scan of spec for diagrams/*.mmd references vs files under spec/diagrams/",
     "schema_version": "1"
   },
-  "score": 90,
-  "updated_at": "2026-04-28T05:28:32.043777Z",
+  "score": 100,
+  "updated_at": "2026-04-28T05:35:32.346519Z",
   "findings": [
     {
       "name": "finding-000",
       "status": "info",
       "points": 0,
-      "detail": "Diagrams referenced in spec: 11"
+      "detail": "Diagrams referenced in spec: 10"
     },
     {
       "name": "finding-001",
@@ -22,26 +22,20 @@
     },
     {
       "name": "finding-002",
-      "status": "critical",
+      "status": "info",
       "points": 0,
-      "detail": "Referenced but missing: 1"
+      "detail": "Referenced but missing: 0"
     },
     {
       "name": "finding-003",
       "status": "info",
       "points": 0,
       "detail": "Orphan diagrams (unreferenced): 0"
-    },
-    {
-      "name": "finding-004",
-      "status": "critical",
-      "points": 0,
-      "detail": "  missing file: diagrams/calibration-ledger-flow.mmd"
     }
   ],
   "exported_variables": {
-    "diagrams:referenced": 11,
+    "diagrams:referenced": 10,
     "diagrams:present": 10,
-    "diagrams:missing": 1
+    "diagrams:missing": 0
   }
 }

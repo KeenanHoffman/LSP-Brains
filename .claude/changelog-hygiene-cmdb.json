@@ -1,12 +1,12 @@
 {
   "meta": {
     "updated_by": "check-changelog-hygiene",
-    "updated_at": "2026-04-28T05:28:34.193378Z",
+    "updated_at": "2026-04-28T05:35:31.311507Z",
     "source": "scan of spec ### Changelog block for METHODOLOGY-EVOLUTION.md \u00a7N citations; cross-check against METHODOLOGY-EVOLUTION ## N. headings",
     "schema_version": "1"
   },
-  "score": 0,
-  "updated_at": "2026-04-28T05:28:34.193378Z",
+  "score": 100,
+  "updated_at": "2026-04-28T05:35:31.311507Z",
   "findings": [
     {
       "name": "finding-000",
@@ -22,57 +22,15 @@
     },
     {
       "name": "finding-002",
-      "status": "warning",
+      "status": "info",
       "points": 0,
-      "detail": "Entries missing METHODOLOGY-EVOLUTION cite: 7"
+      "detail": "Entries missing METHODOLOGY-EVOLUTION cite: 0"
     },
     {
       "name": "finding-003",
       "status": "info",
       "points": 0,
       "detail": "METH-EV sections with no changelog citation: 0"
-    },
-    {
-      "name": "finding-004",
-      "status": "warning",
-      "points": 0,
-      "detail": "  v3.0 (2026-04-27): missing METHODOLOGY-EVOLUTION cite"
-    },
-    {
-      "name": "finding-005",
-      "status": "warning",
-      "points": 0,
-      "detail": "  v2.12 (2026-04-27): missing METHODOLOGY-EVOLUTION cite"
-    },
-    {
-      "name": "finding-006",
-      "status": "warning",
-      "points": 0,
-      "detail": "  v2.11 (2026-04-27): missing METHODOLOGY-EVOLUTION cite"
-    },
-    {
-      "name": "finding-007",
-      "status": "warning",
-      "points": 0,
-      "detail": "  v2.10 (2026-04-27): missing METHODOLOGY-EVOLUTION cite"
-    },
-    {
-      "name": "finding-008",
-      "status": "warning",
-      "points": 0,
-      "detail": "  v2.9 (2026-04-27): missing METHODOLOGY-EVOLUTION cite"
-    },
-    {
-      "name": "finding-009",
-      "status": "warning",
-      "points": 0,
-      "detail": "  v2.8 (2026-04-27): missing METHODOLOGY-EVOLUTION cite"
-    },
-    {
-      "name": "finding-010",
-      "status": "warning",
-      "points": 0,
-      "detail": "  v2.7 (2026-04-27): missing METHODOLOGY-EVOLUTION cite"
     }
   ],
   "exported_variables": {
