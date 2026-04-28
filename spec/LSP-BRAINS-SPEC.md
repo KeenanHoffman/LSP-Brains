@@ -1,10 +1,85 @@
 # LSP Brains Specification
 
-**Version:** 2.11
+**Version:** 2.12
 **Date:** 2026-04-27
 **Status:** Active
 
 ### Changelog
+
+- **v2.12 (2026-04-27):** Federated patterns A2A primitive (Brains-2.0
+  E-B2-7) — the first cross-Brain primitive in the campaign.
+
+  New §16.6.1 (Federated Pattern Sharing) extends §16.6 (A2A Signal
+  Sharing) with a parallel-construction `federated-pattern` A2A message
+  type carrying anonymized pattern features between peer Brains under
+  the same bidirectional opt-in posture as the v2.6 supply-chain-signal
+  precedent. New schema `a2a-federated-pattern-v1.schema.json` formalizes
+  the wire format; new schema `pattern-aggregation-ledger-v1.schema.json`
+  formalizes the per-Brain `pattern-aggregation-ledger.jsonl` which
+  records both received and emitted federated-patterns with `oneOf`
+  row-kind discrimination.
+
+  RFC 2119: implementations SHOULD ship the federated-pattern surface;
+  Brains lacking it remain conformant — federation is opt-in via Agent
+  Card capabilities (mirrors §16.6 supply-chain-signal posture).
+
+  **Closed-set `pattern_kind` vocabulary at v1: `vigilance-pattern`
+  (single value).** Future kinds (operator-calibration-pattern,
+  hat-contract-pattern, trust-budget-pattern) require additive spec
+  change. Same closed-set discipline as §5.4.1 hat-contract tool
+  names + §16.8 trust-budget enums + §17.12 disposition kinds.
+
+  **Privacy under composition (Q1+Q8 lock).** `feature_vector` is
+  closed-set numeric-only at v1: `numeric_count`, `severity_class`
+  (closed-set enum), `observation_window_days`. NO strings, NO file
+  paths, NO FQDNs, NO operator handles, NO per-skill names. Bounded
+  numeric features cannot exfiltrate operator-specific patterns the
+  way free-text could. Schema's `additionalProperties: false` on the
+  payload AND on FeatureVector enforces this structurally.
+
+  **BR-6 signal-flooding mitigation (Q6 lock).** Two-layer rate limit:
+  sender-side `tokio::sync::Semaphore` (max 10 federated-pattern
+  messages per peer per minute) + receiver-side sliding-window
+  drop-and-log past threshold. Drops captured as
+  `entry_kind=received, dropped_reason=rate-limit-exceeded` rows in
+  the pattern-aggregation-ledger. Mirrors R2-2 pattern from
+  supply-chain-vigilance.
+
+  **Recursion guard (Q9 lock — MUST).** Two-layer mitigation. Wire-
+  level: every federated-pattern carries `origin_set[]` array of
+  opaque brain-id hashes (sender + relayers); receiver MUST validate
+  `origin_set[]` does not contain its own opaque hash, dropping with
+  `dropped_reason=recursion-guard` if so. Source-level: the
+  federated-patterns aggregator sensor's own findings (kind prefix
+  `federated_patterns:*`) MUST NOT be transmittable as
+  federated-patterns. Closed-loop by construction.
+
+  **Topology (Q16 lock — LOCAL).** v1 federation flows EXCLUSIVELY
+  parent↔child within the existing fractal-composition tree
+  (`brain-registry.json:children`). Sibling federation and cross-tree
+  federation are v2 candidates per BACKLOG B-23.
+
+  **No reputation decay at v1 (Q7 lock).** v1 ships flat trust + flat
+  rate-limit + drop-and-log; the data captured in the
+  pattern-aggregation-ledger is the substrate for v3 reputation
+  calibration per BACKLOG B-23. Federation is observability-only at v1
+  — no findings to gate on.
+
+  **Operator-explicit emission at v1 (Q2 lock).** No automatic
+  emission on score-update. The reference CLI `neurogrim
+  federated-pattern emit` is operator-invoked. Auto-emission is a v2
+  candidate per BACKLOG B-23 — same discipline as E-B2-6 explicit-only
+  disposition CLI.
+
+  Out of scope at v1: per-skill aggregation, real-time correlation
+  feedback, hard gates, transitive federation auto-relay, cross-Brain
+  reputation sharing. All BACKLOG B-23.
+
+  Additive only — no v2.11 conformance claim invalidated. Reference
+  implementation: NeuroGrim crates `neurogrim-a2a::federated_pattern`
+  + `neurogrim-sensory::federated_patterns` + CLI
+  `neurogrim federated-pattern`. Per-epic Layer-2 plan in
+  `~/.claude/plans/brains-2-0-e-b2-7-layer-2.md`.
 
 - **v2.11 (2026-04-27):** Operator-calibration primitive (Brains-2.0
   E-B2-6).
@@ -2603,6 +2678,150 @@ to produce a `cross_brain_count` field; aggregation rules are
 implementation-defined in v2.6 and a candidate for normative
 specification in v2.7+.
 
+#### 16.6.1 Federated Pattern Sharing (v2.12+)
+
+Brains-2.0 E-B2-7 introduces a **second** A2A message type for
+cross-Brain communication: `federated-pattern`. Where
+`supply-chain-signal` is supply-chain-specific, `federated-pattern`
+is a general primitive for sharing **anonymized pattern features**
+between peer Brains. The wire format is governed by
+`a2a-federated-pattern-v1.schema.json`; the local persistence layer
+is the per-Brain `pattern-aggregation-ledger.jsonl` governed by
+`pattern-aggregation-ledger-v1.schema.json`.
+
+Both schemas land at v2.12. The federated-pattern message type is
+the v1 first-customer of a federation primitive that v2/v3 may
+extend to additional pattern kinds (operator-calibration drift,
+hat-contract violations, trust-budget growth) per BACKLOG B-23. The
+v1 closed-set vocabulary contains a single `pattern_kind` value:
+`vigilance-pattern` — Brains share supply-chain-vigilance correlation
+findings with their peers when the operator chooses to do so.
+
+**Conformance.** A Brain MAY ship without the federated-pattern
+surface and remain conformant — federation is opt-in via Agent Card
+`capabilities.accepts[]` and `capabilities.emits[]` advertisement,
+mirroring the §16.6 supply-chain-signal precedent. Brains lacking
+the advertisement neither send nor receive federated-pattern
+messages.
+
+**Bidirectional opt-in (reuse §16.6 precedent).** Both peers MUST
+declare `federated-pattern` in their Agent Card capabilities before
+federation flows. The reference implementation provides a
+parallel-construction `federated_pattern_opt_in_satisfied(local,
+peer) -> bool` helper mirroring `bidirectional_opt_in_satisfied`
+from supply-chain-signal. Operator-acknowledgement-of-trust SHOULD
+also apply, mirroring §16.6 paragraph 4.
+
+**Privacy under composition (MUST).** The `feature_vector` field is
+closed-set numeric-only at v1: `numeric_count` (integer ≥ 0),
+`severity_class` (closed-set enum), `observation_window_days`
+(integer ≥ 1). Implementations MUST NOT introduce string fields, FQDNs,
+operator handles, file paths, per-skill names, or any free-text into
+the federated-pattern payload at v1. The schema's
+`additionalProperties: false` on both the payload AND the
+FeatureVector sub-object enforces this structurally. The optional
+`metadata` field carries `additionalProperties: true` as an
+operator-extension escape hatch BUT spec MUST language forbids
+placing PII / paths / operator handles in `metadata` — the schema
+cannot enforce this; implementations MUST audit emitted patterns to
+verify the discipline (Q12 sender-side ledger entries provide the
+audit trail).
+
+**Recursion guard (MUST).** Federated patterns flow A → B → C → A
+unless mitigated. Implementations MUST mitigate at TWO layers:
+
+1. **Wire-level.** Every federated-pattern message carries an
+   `origin_set[]` array of opaque brain-id hashes — entries for the
+   original sender and any relayer that has previously handled this
+   message. The receiver MUST validate that `origin_set[]` does not
+   contain its own opaque hash before processing; if it does, the
+   message is dropped with `dropped_reason=recursion-guard` recorded
+   in the pattern-aggregation-ledger. The schema enforces
+   `origin_set` maxItems 4 (Q15 hop-limit lock — sender plus three
+   relayers).
+
+2. **Source-level.** The federated-patterns aggregator sensor's own
+   findings (kind prefix `federated_patterns:*`) MUST NOT be valid
+   sources for emitted federated-pattern messages. Implementations
+   MUST verify (e.g., the emit CLI rejects `--pattern-kind` values
+   prefixed `federated_patterns:` at parse time) — closes the
+   meta-finding feedback loop by construction.
+
+Mirrors the §17.9 `Manual` calibration trigger discipline (E-B2-2)
+and the §17.12.5 operator-calibration recursion guard (E-B2-6),
+extended to cross-Brain message flow.
+
+**Signal flooding mitigation (BR-6, MUST).** Two-layer rate limit.
+
+- **Sender-side.** Implementations MUST gate federated-pattern
+  emission with a per-peer concurrency limit. The reference
+  implementation uses `tokio::sync::Semaphore` with two permits and
+  a 6-second per-permit interval (effective ~10 messages per peer
+  per minute), mirroring the R2-2 pattern from
+  `supply_chain_vigilance/registry.rs`.
+- **Receiver-side.** Implementations MUST gate federated-pattern
+  receipt with a sliding-window counter per `peer_brain_id` —
+  drop-and-log if a peer exceeds 10 federated-pattern receipts per
+  60-second window. Drops MUST be recorded as
+  `entry_kind=received, dropped_reason=rate-limit-exceeded` rows in
+  the pattern-aggregation-ledger.
+
+Two-layer enforcement is BR-6 defense-in-depth: a misconfigured
+sender that bypasses its own semaphore is still constrained by
+receiver-side drop. The 10-per-minute threshold is a v1 starting
+point; v2/v3 candidates include per-peer-reputation-based dynamic
+thresholds (BACKLOG B-23). Default-conservative: tighten thresholds
+first; relax based on calibration data.
+
+**Topology (MUST — LOCAL).** v1 federation flows EXCLUSIVELY between
+parent and child in the existing fractal-composition tree
+(`brain-registry.json:children`). Implementations MUST NOT propagate
+federated-patterns to peers outside this declared tree at v1.
+Sibling federation and cross-tree federation are v2 candidates per
+BACKLOG B-23.
+
+**Operator-explicit emission (Q2).** v1 emission is RECOMMENDED to
+be operator-invoked rather than automatic. The reference
+implementation provides `neurogrim federated-pattern emit
+--pattern-kind <kind> [--peer <peer-id>] [--operator <handle>]`
+which constructs the payload from local correlation findings and
+sends to declared peers under the rate-limit semaphore.
+Auto-emission on every score-update is OUT OF SCOPE for v1
+(BR-6 amplification risk) and is a v2 candidate per BACKLOG B-23 —
+same discipline as the §17.12 explicit-only disposition CLI.
+
+**Sender-side audit trail (Q12).** Every emitted federated-pattern
+MUST be recorded in the SENDER's own pattern-aggregation-ledger as
+an `entry_kind=emitted` row. Operator MAY review what their Brain
+has shared by reading the ledger. NEUROGRIM_OPERATOR identity is
+NOT captured — federation is project-level, not operator-level.
+
+**Cross-version compatibility (Q11).** v1 receivers tolerate unknown
+future `pattern_kind` values via graceful degradation: the schema
+validates structural fields but pattern_kind enum enforcement happens
+at the sensor level (where forgiveness is appropriate). Unknown
+values are silently logged as
+`entry_kind=received, dropped_reason=unknown-pattern-kind` rows.
+Forward-compat additive surface lands via the per-entry `extensions`
+block (E4-7 pattern from trust-budget schema).
+
+**The federated-patterns sensor.** The reference implementation
+provides `neurogrim-sensory::federated_patterns` which reads the
+pattern-aggregation-ledger and emits aggregate observability data.
+Score is advisory floor 100 (federation is INFORMATION, not health).
+Findings: `federated_patterns:no_active_peers`,
+`federated_patterns:peer_inactive_30d`,
+`federated_patterns:high_drop_rate`, `federated_patterns:low_confidence`.
+All advisory weight 0.0 at v1; per Q13 + Q17 lock, no automated
+promotion to gating.
+
+**v1→v2 promotion.** No automated promotion to hard gates.
+Federated patterns are observability-only at v1. v2 candidates per
+BACKLOG B-23 are scope expansions: more pattern_kind values,
+per-skill aggregation, real-time correlation feedback. v3
+candidates: cross-Brain reputation decay, sibling federation,
+cryptographic origin proofs (B-25 cryptographic naming).
+
 ### 16.7 Schemas
 
 Two new normative schemas land with v2.6:
@@ -3476,6 +3695,8 @@ mapping is language-agnostic — implementations choose their own file structure
 | **Dual brain** | Architecture where a local brain and external brain share state via a common protocol (Section 10). |
 | **Ecosystem** | Multiple Brains composed fractally, where a parent Brain aggregates scores from child Brains (Section 9). |
 | **Effective score** | A domain's score after confidence weighting: `raw * confidence / 100`. |
+| **Federated pattern** | An A2A message type (v2.12+, kind `federated-pattern`) carrying anonymized pattern features between peer Brains under bidirectional opt-in. Closed-set `pattern_kind` vocabulary at v1: `vigilance-pattern`. `feature_vector` is closed-set numeric-only (privacy under composition lock). Recursion guard via `origin_set[]` array of opaque brain-id hashes (max 4 hops). Two-layer rate limit (sender + receiver) per BR-6. v1 federation flows parent↔child within the fractal-composition tree only; sibling federation is a v2 candidate. See §16.6.1. |
+| **Pattern-aggregation ledger** | Per-Brain append-only `.claude/brain/pattern-aggregation-ledger.jsonl` (v2.12+) recording received and emitted federated-pattern messages. `oneOf` row-kind discrimination: `ReceivedEntry` (with optional `dropped_reason` for rate-limit / recursion-guard / schema-validation drops) vs `EmittedEntry` (sender-side audit trail per Q12 lock). Validates against `pattern-aggregation-ledger-v1.schema.json`. Read by the `federated-patterns` aggregator sensor; observability-only at v1. See §16.6.1. |
 | **Gate** | A pass/fail quality check that blocks specified actions when failing. |
 | **Governance** | The Brain subsystem (§5) that decides what recommendations the Brain may act on, which human approval each action requires, and which invariants cannot be overridden. Expressed as gates, hats, and autonomy levels. |
 | **Hat** | An operational mode in LSP Brains. The spec uses the term in two distinct scopes (v2.9+) — see **registry hat** (§5.4) and **persona hat** (§5.4.1) for the disambiguated definitions. The bare term "hat" is acceptable when context makes the scope unambiguous. |
