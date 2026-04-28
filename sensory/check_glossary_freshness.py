@@ -59,6 +59,29 @@ LIST_ITEM_LABEL_RE = re.compile(
     re.MULTILINE,
 )
 
+# Spec-annotation parenthetical pattern: bolds with "(MUST)", "(Q-X lock)",
+# "(v2.X+)", "(LOCAL)", etc. are paragraph-section headers decorated with
+# implementation/version/RFC-2119 annotations — NOT glossary-worthy terms.
+# Matches "(<...annotation tokens...>)" anywhere in the bold's content.
+# Examples it skips:
+#   "Recursion guard (Q9 lock — MUST)."
+#   "Privacy contract reaffirmed (BR-5)."
+#   "Trust-budget composition (v2.8+)."
+#   "Topology (Q16 lock — LOCAL)."
+ANNOTATED_PARENTHETICAL_RE = re.compile(
+    r"\([^)]*(?:"
+    r"MUST|SHOULD|MAY|"             # RFC 2119 keywords
+    r"Q\d+|"                        # Layer-2 decision lock IDs
+    r"BR-\d+|"                      # blocker-requirement IDs
+    r"v\d+(?:\.\d+)?\+?|"           # version annotations (v1, v2.7, v3.0+)
+    r"LOCAL|"                       # scope markers
+    r"\bNEW\b|\bREUSED\b|"          # spec-section status
+    r"operator-confirmed|"          # decision-locked annotations
+    r"added\s+v\d+|since\s+v\d+|"   # version-added annotations
+    r"reuse\s+§"                    # cross-spec-section references
+    r")[^)]*\)"
+)
+
 # Terms to ignore: bold labels that aren't glossary-worthy (section markers, form labels).
 IGNORE_TERMS = {
     "Version", "Date", "Status", "Purpose", "Context", "Tool Name", "Diagram",
@@ -76,6 +99,15 @@ IGNORE_TERMS = {
     # Emphasis bolds in prose — describing things, not naming them.
     "agent nervous systems", "correlation engine", "continuous exponential decay",
     "raw scores", "human-comms", "identical", "invariants", "task",
+    # Spec-internal section-divider headers — documentation hierarchy markers
+    # introduced by v3.0 normative additions, NOT defined concepts. Each is a
+    # short paragraph-header bold whose content is explained in the paragraph
+    # that follows; none warrants a top-level glossary entry.
+    "Backward compatibility.", "Closed-set vocabulary.", "Conformance.",
+    "Drift semantics.", "Findings shape.", "No section-content changes.",
+    "Out-of-scope at v1.", "Receiver-side.", "Sender-side.", "Source-level.",
+    "Static validation v1.", "The federated-patterns sensor.", "Wire-level.",
+    "Age-decay fallback.",
 }
 
 # Story-ID pattern: `S6-DB-7`, `S5-TP-9`, etc. Never glossary terms.
@@ -140,6 +172,16 @@ class GlossaryFreshnessTool(SensoryTool):
             if STORY_ID_RE.match(term):
                 # Story identifiers like `S6-DB-7` are roadmap markers, not terms.
                 continue
+            if ANNOTATED_PARENTHETICAL_RE.search(term):
+                # Annotation-decorated paragraph-section headers (e.g.,
+                # "Privacy contract reaffirmed (BR-5).", "Topology (Q16
+                # lock — LOCAL).") are documentation hierarchy markers,
+                # not glossary-worthy terms.
+                continue
+            if "§" in term:
+                # Bolds containing a section reference are cross-references
+                # (e.g., "Composition with §5.4.1 hat contracts."), not terms.
+                continue
             introduced.add(term)
 
         # Glossary terms from Appendix E rows
@@ -155,7 +197,16 @@ class GlossaryFreshnessTool(SensoryTool):
         # OR bolded). The earlier strict definition (bolded-use only) produced
         # 26 false positives on terms like "CMDB" that appear in prose without
         # bolding. The spec does not mandate bolding of first-use terms.
-        body_lower = prose_before.lower()
+        #
+        # Use the UNSTRIPPED body for the orphan check (vs `prose_before`
+        # which has fenced + inline code stripped). Many glossary terms are
+        # filenames or schema field names that appear ONLY in inline code
+        # like `trust-budget.toml` or `domain-calibration-ledger.jsonl`;
+        # stripping inline code before the orphan check produces false
+        # positives. The "introduced" check above still uses the stripped
+        # text — we don't want bolds inside code blocks counted as
+        # term-introductions.
+        body_lower = before.lower()
         # Use lookaround boundaries instead of `\b` so parenthesized terms like
         # `Task (A2A)` match — `\b` doesn't assert between `)` and a space,
         # which would hide legitimate references.

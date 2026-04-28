@@ -1,18 +1,18 @@
 {
   "meta": {
     "updated_by": "check-rfc-2119-compliance",
-    "updated_at": "2026-04-28T05:35:33.701181Z",
+    "updated_at": "2026-04-28T06:17:56.865819Z",
     "source": "scan of spec numbered sections for lowercase will/should/must vs RFC 2119 uppercase usage",
     "schema_version": "1"
   },
   "score": 100,
-  "updated_at": "2026-04-28T05:35:33.701181Z",
+  "updated_at": "2026-04-28T06:17:56.865819Z",
   "findings": [
     {
       "name": "finding-000",
       "status": "info",
       "points": 0,
-      "detail": "MUST occurrences: 273"
+      "detail": "MUST occurrences: 274"
     },
     {
       "name": "finding-001",
@@ -35,7 +35,7 @@
   ],
   "exported_variables": {
     "rfc2119:ambiguous_count": 0,
-    "rfc2119:must_count": 273,
+    "rfc2119:must_count": 274,
     "rfc2119:should_count": 97,
     "rfc2119:may_count": 55
   }

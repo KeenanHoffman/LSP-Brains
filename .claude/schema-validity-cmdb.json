@@ -1,12 +1,12 @@
 {
   "meta": {
     "updated_by": "check-schema-validity",
-    "updated_at": "2026-04-28T05:35:38.034363Z",
+    "updated_at": "2026-04-28T06:17:53.998535Z",
     "source": "parse of schemas/*.schema.json: draft-07 conformance, internal $ref resolution",
     "schema_version": "1"
   },
   "score": 100,
-  "updated_at": "2026-04-28T05:35:38.034363Z",
+  "updated_at": "2026-04-28T06:17:53.998535Z",
   "findings": [
     {
       "name": "finding-000",
