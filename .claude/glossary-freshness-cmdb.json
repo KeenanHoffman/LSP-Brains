@@ -1,130 +1,196 @@
 {
   "meta": {
     "updated_by": "check-glossary-freshness",
-    "updated_at": "2026-04-25T21:17:22.508369Z",
+    "updated_at": "2026-04-28T05:07:45.158050Z",
     "source": "scan of spec prose for **bold** terms vs Appendix E glossary rows",
     "schema_version": "1"
   },
-  "score": 37,
-  "updated_at": "2026-04-25T21:17:22.508369Z",
+  "score": 0,
+  "updated_at": "2026-04-28T05:07:45.158050Z",
   "findings": [
     {
       "name": "finding-000",
       "status": "info",
       "points": 0,
-      "detail": "Bold terms introduced in body: 29"
+      "detail": "Bold terms introduced in body: 69"
     },
     {
       "name": "finding-001",
       "status": "info",
       "points": 0,
-      "detail": "Glossary entries in Appendix E: 53"
+      "detail": "Glossary entries in Appendix E: 83"
     },
     {
       "name": "finding-002",
       "status": "warning",
       "points": 0,
-      "detail": "Introduced but undefined: 11"
+      "detail": "Introduced but undefined: 40"
     },
     {
       "name": "finding-003",
       "status": "info",
       "points": 0,
-      "detail": "Orphan glossary entries (not referenced in body): 4"
+      "detail": "Orphan glossary entries (not referenced in body): 11"
     },
     {
       "name": "finding-004",
       "status": "warning",
       "points": 0,
-      "detail": "  missing: **Audit failure handling.**"
+      "detail": "  missing: **Adversarial audit**"
     },
     {
       "name": "finding-005",
       "status": "warning",
       "points": 0,
-      "detail": "  missing: **Cadence obligation.**"
+      "detail": "  missing: **Age-decay fallback.**"
     },
     {
       "name": "finding-006",
       "status": "warning",
       "points": 0,
-      "detail": "  missing: **Calibration.**"
+      "detail": "  missing: **Aggregation-only export (MUST).**"
     },
     {
       "name": "finding-007",
       "status": "warning",
       "points": 0,
-      "detail": "  missing: **Delta tracking.**"
+      "detail": "  missing: **BR-6 signal-flooding mitigation (Q6 lock).**"
     },
     {
       "name": "finding-008",
       "status": "warning",
       "points": 0,
-      "detail": "  missing: **Multi-judge consensus.**"
+      "detail": "  missing: **Backward compatibility.**"
     },
     {
       "name": "finding-009",
       "status": "warning",
       "points": 0,
-      "detail": "  missing: **Promotion path.**"
+      "detail": "  missing: **Bidirectional opt-in (reuse \u00a716.6 precedent).**"
     },
     {
       "name": "finding-010",
       "status": "warning",
       "points": 0,
-      "detail": "  missing: **Proposals.**"
+      "detail": "  missing: **Closed-set vocabulary.**"
     },
     {
       "name": "finding-011",
       "status": "warning",
       "points": 0,
-      "detail": "  missing: **Red samples.**"
+      "detail": "  missing: **Composition with \u00a75.4.1 hat contracts.**"
     },
     {
       "name": "finding-012",
       "status": "warning",
       "points": 0,
-      "detail": "  missing: **Runs MUST account for token cost.**"
+      "detail": "  missing: **Confidence counterpart (v2.7+).**"
     },
     {
       "name": "finding-013",
       "status": "warning",
       "points": 0,
-      "detail": "  missing: **S7-ABV**"
+      "detail": "  missing: **Conformance.**"
     },
     {
       "name": "finding-014",
       "status": "warning",
       "points": 0,
-      "detail": "  missing: **Safety rail.**"
+      "detail": "  missing: **Cross-version compatibility (Q11).**"
     },
     {
       "name": "finding-015",
+      "status": "warning",
+      "points": 0,
+      "detail": "  missing: **Drift semantics.**"
+    },
+    {
+      "name": "finding-016",
+      "status": "warning",
+      "points": 0,
+      "detail": "  missing: **Envelope-supplied confidence (v2.7+).**"
+    },
+    {
+      "name": "finding-017",
+      "status": "warning",
+      "points": 0,
+      "detail": "  missing: **Findings shape.**"
+    },
+    {
+      "name": "finding-018",
+      "status": "warning",
+      "points": 0,
+      "detail": "  missing: **Judge-integrity audit**"
+    },
+    {
+      "name": "finding-019",
+      "status": "info",
+      "points": 0,
+      "detail": "  orphan: **Declared crate**"
+    },
+    {
+      "name": "finding-020",
+      "status": "info",
+      "points": 0,
+      "detail": "  orphan: **Disposition kind**"
+    },
+    {
+      "name": "finding-021",
+      "status": "info",
+      "points": 0,
+      "detail": "  orphan: **Disposition record**"
+    },
+    {
+      "name": "finding-022",
+      "status": "info",
+      "points": 0,
+      "detail": "  orphan: **Pattern-aggregation ledger**"
+    },
+    {
+      "name": "finding-023",
+      "status": "info",
+      "points": 0,
+      "detail": "  orphan: **children[] confidence**"
+    },
+    {
+      "name": "finding-024",
+      "status": "info",
+      "points": 0,
+      "detail": "  orphan: **domain-calibration ledger**"
+    },
+    {
+      "name": "finding-025",
+      "status": "info",
+      "points": 0,
+      "detail": "  orphan: **envelope confidence**"
+    },
+    {
+      "name": "finding-026",
+      "status": "info",
+      "points": 0,
+      "detail": "  orphan: **per-domain confidence**"
+    },
+    {
+      "name": "finding-027",
       "status": "info",
       "points": 0,
       "detail": "  orphan: **supply-chain decision ledger**"
     },
     {
-      "name": "finding-016",
+      "name": "finding-028",
       "status": "info",
       "points": 0,
       "detail": "  orphan: **supply-chain-sca**"
     },
     {
-      "name": "finding-017",
+      "name": "finding-029",
       "status": "info",
       "points": 0,
-      "detail": "  orphan: **supply-chain-signal**"
-    },
-    {
-      "name": "finding-018",
-      "status": "info",
-      "points": 0,
-      "detail": "  orphan: **supply-chain-vigilance**"
+      "detail": "  orphan: **trust-budget.toml**"
     }
   ],
   "exported_variables": {
-    "glossary:missing_count": 11,
-    "glossary:orphan_count": 4
+    "glossary:missing_count": 40,
+    "glossary:orphan_count": 11
   }
 }
