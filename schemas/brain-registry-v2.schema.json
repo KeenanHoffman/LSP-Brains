@@ -12,8 +12,8 @@
       "properties": {
         "schema_version": {
           "type": "string",
-          "description": "Registry schema version.",
-          "enum": ["1", "2"]
+          "description": "Registry schema version. v2.1 (2026-04-28) is additive over v2: introduces the optional `children.*.read_only` boolean for codifying observed-only sibling-peer posture (v3.1 E-V31-B). Registries declaring '2' continue to validate; '2.1' opts into v2.1 awareness.",
+          "enum": ["1", "2", "2.1"]
         },
         "description": {
           "type": "string",
@@ -504,7 +504,12 @@
               "interface_version": { "type": "string", "default": "1" },
               "depends_on": { "type": "array", "items": { "type": "string" }, "default": [] },
               "weight": { "type": "number", "minimum": 0, "maximum": 1, "default": 1.0 },
-              "enabled": { "type": "boolean", "default": true }
+              "enabled": { "type": "boolean", "default": true },
+              "read_only": {
+                "type": "boolean",
+                "default": false,
+                "description": "v2.1+. When true, declares this child as observed-only: the parent Brain reads scores via snapshot.requested but MUST NOT originate outbound writes (e.g., config.changed) toward this child. Codifies the ecosystem's non-influencing posture for sibling-project peers brought into the topology as observables (v3.1 E-V31-B). Schema-level documentation of intent; runtime enforcement at the A2A client envelope-construction layer is a separate piece (v3.1 E-V31-B implementation). Defaults to false for backward compatibility — pre-v2.1 registries and ecosystem-internal children behave unchanged."
+              }
             },
             "additionalProperties": true
           }
