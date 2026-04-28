@@ -41,9 +41,10 @@
         "proposal.created",
         "proposal.resolved",
         "config.changed",
-        "supply-chain-signal"
+        "supply-chain-signal",
+        "federated-pattern"
       ],
-      "description": "One of the canonical A2A message types. Payload shape varies by type; see Section 10.4 + Appendix G. The `supply-chain-signal` type (added v2.6) carries findings between peer Brains under a bidirectional opt-in consent model — see §16.6 and `a2a-supply-chain-signal-v1.schema.json`."
+      "description": "One of the canonical A2A message types. Payload shape varies by type; see Section 10.4 + Appendix G. The `supply-chain-signal` type (added v2.6) carries findings between peer Brains under a bidirectional opt-in consent model — see §16.6 and `a2a-supply-chain-signal-v1.schema.json`. The `federated-pattern` type (added v2.12) is a general anonymized-pattern federation primitive under the same bidirectional opt-in posture — see §16.6.1 and `a2a-federated-pattern-v1.schema.json`."
     },
     "reply_to": {
       "type": "string",

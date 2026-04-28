@@ -35,7 +35,7 @@
       "properties": {
         "accepts": {
           "type": "array",
-          "description": "Message types this Brain can receive and act on. Note: `supply-chain-signal` (added v2.6) is governed by a bidirectional opt-in consent model — both peers MUST declare it in `accepts[]` before signals flow (spec §16.6).",
+          "description": "Message types this Brain can receive and act on. Note: `supply-chain-signal` (added v2.6) is governed by a bidirectional opt-in consent model — both peers MUST declare it in `accepts[]` before signals flow (spec §16.6). `federated-pattern` (added v2.12) is governed by the same bidirectional opt-in posture (§16.6.1).",
           "items": {
             "type": "string",
             "enum": [
@@ -49,13 +49,14 @@
               "proposal.created",
               "proposal.resolved",
               "config.changed",
-              "supply-chain-signal"
+              "supply-chain-signal",
+              "federated-pattern"
             ]
           }
         },
         "emits": {
           "type": "array",
-          "description": "Message types this Brain produces. Note: `supply-chain-signal` (added v2.6) requires bidirectional opt-in — see `accepts[]`.",
+          "description": "Message types this Brain produces. Note: `supply-chain-signal` (added v2.6) requires bidirectional opt-in — see `accepts[]`. `federated-pattern` (added v2.12) requires the same bidirectional opt-in (§16.6.1).",
           "items": {
             "type": "string",
             "enum": [
@@ -69,7 +70,8 @@
               "proposal.created",
               "proposal.resolved",
               "config.changed",
-              "supply-chain-signal"
+              "supply-chain-signal",
+              "federated-pattern"
             ]
           }
         },
