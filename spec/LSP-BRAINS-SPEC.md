@@ -1,10 +1,26 @@
 # LSP Brains Specification
 
-**Version:** 2.12
+**Version:** 3.0
 **Date:** 2026-04-27
-**Status:** Active
+**Status:** Stable v3.0
 
 ### Changelog
+
+- **v3.0 (2026-04-27):** Stability-marker release. Closes the Brains-2.0
+  self-observability campaign (E-B2-1..E-B2-7) by promoting v2.7→v2.12 to a
+  stable consolidated v3.0 baseline. **No section-content changes.** All seven
+  Brains-2.0 primitives (confidence as first-class envelope §3.8, self-coherence
+  + domain-calibration ledgers §17, hat-as-formal-contract §5.4.1, trust-budget
+  §16.8, METH-EV §16 multi-round assessment, operator-calibration §17.12,
+  federated patterns A2A §16.6.1) ship advisory (weight 0.0) across all four
+  Brains in the ecosystem. v3.0 is **additive over v2.x**; deprecation track
+  deferred to v4.0 (no symbols are deprecated, removed, or withdrawn at this
+  release). Calibration windows (≥30-day self-coherence, ≥50 operator-calibration
+  records) per the Charter Amendment 2026-04-27 are post-publish observation
+  windows feeding a v3.1 calibration-report gate. See
+  `audit/BRAINS-2-0-RETROSPECTIVE-2026-04-27.md` for the campaign retrospective
+  and METH-EV §16 multi-round assessment cadence applied to the Brains-2.0
+  campaign close.
 
 - **v2.12 (2026-04-27):** Federated patterns A2A primitive (Brains-2.0
   E-B2-7) — the first cross-Brain primitive in the campaign.

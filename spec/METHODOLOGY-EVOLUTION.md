@@ -276,6 +276,53 @@ scope is narrow.
   catalogs, Phase 1.5 evaluations, retrospective tables). Speculative;
   defer until at least 3 campaigns produce comparable artifacts.
 
+### Update 2026-04-27 — first §16 case study (Brains-2.0 campaign close)
+
+The Brains-2.0 self-observability campaign (E-B2-0..E-B2-8) closed
+2026-04-27 and was the first campaign to apply §16 to its own pre-
+release retrospective. Outcome:
+
+- **Strict bar (Round 1) honored.** Each of the 9 epics ran a Layer-2
+  plan-critic pass before execution. Plan-critic surfaced 18 open
+  questions for E-B2-8 alone (Q1–Q18); 17 locked at Layer-2; only
+  Q1+Q2 needed explicit operator authorization (charter amendment
+  for the calibration-window reframe). Plan-critic surfaced 2 🔴
+  blockers for E-B2-8 that would have shipped without an adversary
+  pass — confirming Round 1's value proposition.
+- **Surgical bar (Round 2) NOT invoked.** Round 1 + diminishing-
+  returns signaling was sufficient at this campaign close. v3.1
+  calibration-report gate may invoke Round 2 when promotion-readiness
+  data lands (post-publish 30-day window).
+- **Diminishing-returns signal fired.** Q-decisions in Round 1
+  trended toward "lock the recommendation as-is" by Q-band C onward.
+  The campaign converged on "ship the structural surface; defer
+  empirical validation to v3.1." Convergence shape: strict-then-
+  diminishing-returns with no surgical bar required, because the
+  prior 7 epics had already locked the relevant primitives.
+- **Phase 1.5 escape hatch NOT invoked.** No URGENCY trigger. The
+  charter amendment was an explicit Layer-2 mechanism, not an
+  escape-hatch firing.
+- **Retrospective lands at** `audit/BRAINS-2-0-RETROSPECTIVE-2026-04-27.md`.
+- **Charter amendment lands at** `audit/BRAINS-2-0-CHARTER.md` §
+  Charter Amendment 2026-04-27.
+
+**N=2 case-study count after Brains-2.0:** Brains-2.0 (this update)
+joins the supply-chain campaign (`audit/PRE-RELEASE-ASSESSMENT-2026-
+04-26.md`) as the second §16 case study. The two campaigns converged
+in different shapes — supply-chain in 3 rounds (strict + surgical +
+diminishing-returns), Brains-2.0 in essentially 1+½ rounds (strict +
+diminishing-returns, no surgical bar). This bears out §16's
+"round-count generalization" Deferred item: future campaigns may
+converge in 2 or 4 rounds, and the structural answer is the escape
+hatch + signaling, not a count.
+
+**RFC 2119 status remains unchanged.** §16 cadence claims remain
+SHOULD / RECOMMENDED. The N=2 evidence base is not yet sufficient
+to promote any cadence element to MUST. A third campaign at v3.1+
+(when the calibration-report gate fires) is the earliest candidate
+for cadence-MUST promotion of the Phase-1.5 escape-hatch convention
+(per the original Deferred item).
+
 ---
 
 ## 15. Supply-chain awareness as first-class Brain concern (2026-04-25)
