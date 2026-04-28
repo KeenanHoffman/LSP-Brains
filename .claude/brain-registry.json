@@ -24,7 +24,8 @@
       "supply-chain-review":    0.0,
       "domain-calibration":     0.0,
       "trust-budget":           0.0,
-      "operator-calibration":   0.0
+      "operator-calibration":   0.0,
+      "federated-patterns":     0.0
     },
     "advisory_domains": [
       "spec-completeness",
@@ -41,7 +42,8 @@
       "supply-chain-review",
       "domain-calibration",
       "trust-budget",
-      "operator-calibration"
+      "operator-calibration",
+      "federated-patterns"
     ],
     "principle_map": {
       "spec-completeness":      "Spec Completeness",
@@ -58,7 +60,8 @@
       "supply-chain-review":    "Supply-Chain Review (Layer 3)",
       "domain-calibration":     "Domain Calibration (Brains-2.0 §17)",
       "trust-budget":           "Trust Budget (Brains-2.0 §16.8)",
-      "operator-calibration":   "Operator Calibration (Brains-2.0 §17.12)"
+      "operator-calibration":   "Operator Calibration (Brains-2.0 §17.12)",
+      "federated-patterns":     "Federated Patterns (Brains-2.0 §16.6.1)"
     },
     "domain_definitions": {
       "_doc": "All domains read CMDB stubs until sensory tools land. Placeholder scores at 0 reflect unknown state; per spec principle #2 (scoring must be honest), unknown is not good.",
@@ -171,6 +174,13 @@
         "scoring_source": {
           "type": "cmdb",
           "path": ".claude/operator-calibration-cmdb.json"
+        }
+      },
+      "federated-patterns": {
+        "_doc": "E-B2-7 (2026-04-27): Brains-2.0 federated-patterns aggregator per LSP-Brains v2.12 §16.6.1. Spec repo posture: LSP-Brains is a child of the ecosystem Brain in the fractal-composition topology; federation flows ecosystem ↔ LSP-Brains via the parent↔child v1 lock. Pattern-aggregation-ledger may be empty until federation activity begins. Closed-set finding kinds per Q17. Score = 100 always. Aggregation-only export per Q10. Recursion guard per Q9. Default weight 0.0 (advisory) at v1. Refresh: `neurogrim sensory federated-patterns --project-root D:/Brains/LSP-Brains/ > .claude/federated-patterns-cmdb.json`.",
+        "scoring_source": {
+          "type": "cmdb",
+          "path": ".claude/federated-patterns-cmdb.json"
         }
       }
     },
