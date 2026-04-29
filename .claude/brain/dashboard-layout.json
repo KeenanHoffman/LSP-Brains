@@ -1,0 +1,79 @@
+{
+  "schema_version": "1",
+  "brain_id": "lsp-brains",
+  "is_default": false,
+  "widgets": [
+    {
+      "id": "identity",
+      "widget_type": "identity",
+      "size": "full",
+      "title": null,
+      "config": {}
+    },
+    {
+      "id": "spec-framing",
+      "widget_type": "markdown-note",
+      "size": "full",
+      "title": "Scoring a specification",
+      "config": {
+        "content": "This Brain measures the **LSP Brains specification** itself — not a codebase. All domains are advisory by design: a spec doesn't have a unified score in the conventional sense. What it has is **shape, completeness, and integrity**. The cards below surface the eight spec-quality signals; click any one for the underlying findings."
+      }
+    },
+    {
+      "id": "spec-completeness",
+      "widget_type": "domain-card",
+      "size": "third",
+      "title": null,
+      "config": { "domain": "spec-completeness" }
+    },
+    {
+      "id": "schema-validity",
+      "widget_type": "domain-card",
+      "size": "third",
+      "title": null,
+      "config": { "domain": "schema-validity" }
+    },
+    {
+      "id": "link-integrity",
+      "widget_type": "domain-card",
+      "size": "third",
+      "title": null,
+      "config": { "domain": "link-integrity" }
+    },
+    {
+      "id": "glossary-freshness",
+      "widget_type": "domain-card",
+      "size": "third",
+      "title": null,
+      "config": { "domain": "glossary-freshness" }
+    },
+    {
+      "id": "diagram-sync",
+      "widget_type": "domain-card",
+      "size": "third",
+      "title": null,
+      "config": { "domain": "diagram-sync" }
+    },
+    {
+      "id": "rfc-2119-compliance",
+      "widget_type": "domain-card",
+      "size": "third",
+      "title": null,
+      "config": { "domain": "rfc-2119-compliance" }
+    },
+    {
+      "id": "strongest-signals",
+      "widget_type": "strongest-signals",
+      "size": "half",
+      "title": "Strongest spec signals",
+      "config": { "count": 5 }
+    },
+    {
+      "id": "top-recommendations",
+      "widget_type": "top-recommendations",
+      "size": "half",
+      "title": null,
+      "config": { "count": 5 }
+    }
+  ]
+}
