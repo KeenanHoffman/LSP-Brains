@@ -1115,7 +1115,11 @@ running between modules. The fractal pattern requires all three layers
 to agree:
 
 1. **Schema** — `brain-registry-v2` permits `type: "a2a"` + `endpoint`
-2. **Rust types** — `ScoringSource` carries the `endpoint` string
+2. **Rust types** — `ScoringSourceConfig` carries the `endpoint` string
+   *(this struct was named `ScoringSource` when Session 3 landed; it
+   was renamed to `ScoringSourceConfig` in NeuroGrim v5.0.0 / V5-MOD-1
+   when the unqualified name `ScoringSource` was reclaimed for the
+   pluggable trait)*
 3. **Pipeline dispatch** — `load_cmdb_data` routes `type: "a2a"` to
    `invoke_child` with a synthesized `ChildTransport::A2A`
 
@@ -1132,8 +1136,10 @@ Three lock-step additions, all additive:
 
 - `brain-registry-v2.schema.json` — `scoring_source.type` enum gains
   `"a2a"`; new `endpoint` + `interface_version` properties.
-- `neurogrim-core/src/registry.rs` — `ScoringSource` gains
+- `neurogrim-core/src/registry.rs` — `ScoringSourceConfig` gains
   `endpoint: Option<String>` + `interface_version: Option<String>`.
+  *(Was named `ScoringSource` at Session 3 landing; renamed in
+  NeuroGrim v5.0.0 / V5-MOD-1 when the trait of that name landed.)*
 - `neurogrim-cli/src/commands/context.rs::load_cmdb_data` — dispatch
   on `source_type`; A2A branch builds a `ChildEntry` and calls
   `neurogrim_ecosystem::invoke_child`; resulting AgentOutput.score
