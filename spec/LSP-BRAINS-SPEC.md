@@ -3932,6 +3932,22 @@ built-in tools use the MCP protocol internally:
 - Testing is uniform: mock MCP server = mock sensory tool
 - The Brain need not distinguish between built-in and external tools
 
+A conformant Brain MAY also expose built-in sensors via a **trait + factory + registry**
+pattern within its own implementation language, allowing third-party crates to register
+custom sensors without forking the core. This is an implementation-pattern recommendation,
+not a normative requirement. NeuroGrim ships this pattern as of v5.0.0 (V5-MOD-2,
+2026-05-02): the `Sensor` trait + `SensorFactory` + `SensorRegistry` in `neurogrim-core`
+plus per-sensor cargo-feature gates that operators use to ship slim binaries
+(`cargo build --no-default-features --features sensor-X`). A conformance suite published
+alongside the trait gives third-party authors a verifiable target — "passes the same
+contract as built-ins." See NeuroGrim's
+[`crates/neurogrim-core/src/sensor.rs`](https://github.com/KeenanHoffman/NeuroGrim/blob/main/neurogrim/crates/neurogrim-core/src/sensor.rs)
+and [`examples/sensor-readme-quality/`](https://github.com/KeenanHoffman/NeuroGrim/blob/main/neurogrim/examples/sensor-readme-quality/)
+as the reference implementation. Other implementations are free to use different
+plugin mechanisms (Python entry points, language-native plugin registries, dynamic
+loading) — the spec only requires that the *protocol* contract above remain uniform
+across built-in and external tools, not the *plugin mechanism*.
+
 ---
 
 ## Appendix G: A2A Integration
