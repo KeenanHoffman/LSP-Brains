@@ -6,11 +6,24 @@
 > contracts, governance gates, trajectory intelligence, and peer-Brain coordination.
 > NeuroGrim is the Rust reference implementation.
 
-**Version:** 3.0
-**Date:** 2026-04-27
-**Status:** Stable v3.0
+**Version:** 3.1
+**Date:** 2026-05-04
+**Status:** Stable v3.1
 
 ### Changelog
+
+- **v3.1 (2026-05-04):** Additive documentation pass. Adds §9.8 "Trait Surface
+  Recommendation (Implementation-Pattern)" — a non-normative pattern recommendation
+  noting that conformant Brains MAY expose fractal-composition-relevant trait
+  surfaces (test runner, transport, secrets backend) via a contract crate so that
+  third-party adopters can plug custom impls without forking the Brain core.
+  Mirrors the existing §F.6 trait-surface recommendation for sensors (added at
+  v3.0 for NeuroGrim's V5-MOD-2). NeuroGrim cited as the reference implementation
+  (V5-FOUND-4 + V5-SDK-1/2 ship-out 2026-05-03/04 — `neurogrim-sdk` contract
+  crate); the pattern is implementation-language-agnostic at the spec level.
+  See NeuroGrim VISION principle #20 ("Pluggability by use, not aspiration",
+  finalized via dual-review T+P at V5-DOC-2). **No section-content changes
+  outside the new §9.8**; conformance claims unchanged from v3.0.
 
 - **v3.0 (2026-04-27):** Stability-marker release. Closes the Brains-2.0
   self-observability campaign (E-B2-1..E-B2-7) by promoting v2.7→v2.12 to a
@@ -1704,6 +1717,36 @@ invokes the child via subprocess (legacy transport) and parses its stdout as age
 JSON. This remains conformant in v2.1.
 
 Implementations MUST produce the same ecosystem score regardless of transport.
+
+### 9.8 Trait Surface Recommendation (Implementation-Pattern)
+
+A conformant Brain MAY expose **fractal-composition-relevant trait surfaces** — the
+test-runner protocol (the runner abstraction that drives child-Brain test
+orchestration), the A2A transport (§9.7's transport selection), and (when
+applicable) the encrypted-secrets backend used by the Brain — via a **contract
+crate**, allowing third-party adopters to plug custom impls without forking the
+Brain core. This is an implementation-pattern recommendation, not a normative
+requirement; the Section 9 protocol contracts above remain the binding constraint.
+
+NeuroGrim ships this pattern as of v5.0.0 (V5-FOUND-4 + V5-SDK-1/2, 2026-05-03/04):
+the `TestRunner` trait + `TestRunnerFactory` + `TestRunnerRegistry` in
+`neurogrim-core` (plus `Transport` in `neurogrim-a2a` and `SecretBackend` in
+`neurogrim-secrets`) are re-exported via the `neurogrim-sdk` contract crate so
+adopters depend on `neurogrim-sdk` as the single import surface. A conformance
+suite published alongside each trait gives third-party authors a verifiable
+target — "passes the same contract as built-ins." See NeuroGrim's
+[`crates/neurogrim-sdk/`](https://github.com/KeenanHoffman/NeuroGrim/blob/main/neurogrim/crates/neurogrim-sdk/)
+and [`docs/v5-composition-guide.md`](https://github.com/KeenanHoffman/NeuroGrim/blob/main/docs/v5-composition-guide.md)
+as the reference implementation. This applies NeuroGrim VISION principle #20
+("Pluggability by use, not aspiration") — every trait extracted at v5.0 cleared
+the reshape rule via real built-in impls, not aspirational stubs.
+
+Other implementations are free to use different plugin mechanisms (Python entry
+points, language-native plugin registries, dynamic loading) — the spec only
+requires that the *Section 9 protocol contracts* remain uniform across built-in
+and external impls, not the *plugin mechanism*. This mirrors §F.6's
+recommendation for the sensory-tool trait surface (`Sensor` in NeuroGrim's
+implementation, equivalent in others).
 
 ---
 
