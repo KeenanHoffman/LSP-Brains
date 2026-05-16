@@ -1,0 +1,352 @@
+[
+  {
+    "scored_at": "2026-04-29T03:28:42.457818700Z",
+    "score": 0,
+    "domains": {
+      "rfc-2119-compliance": {
+        "score": 100,
+        "confidence": 84
+      },
+      "capability-hygiene": {
+        "score": 100,
+        "confidence": 100
+      },
+      "schema-validity": {
+        "score": 100,
+        "confidence": 84
+      },
+      "diagram-sync": {
+        "score": 100,
+        "confidence": 84
+      },
+      "operator-calibration": {
+        "score": 100,
+        "confidence": 100
+      },
+      "federated-patterns": {
+        "score": 100,
+        "confidence": 100
+      },
+      "domain-calibration": {
+        "score": 100,
+        "confidence": 100
+      },
+      "supply-chain-sca": {
+        "score": 0,
+        "confidence": 100
+      },
+      "spec-completeness": {
+        "score": 100,
+        "confidence": 84
+      },
+      "glossary-freshness": {
+        "score": 84,
+        "confidence": 84
+      },
+      "supply-chain-review": {
+        "score": 100,
+        "confidence": 100
+      },
+      "trust-budget": {
+        "score": 100,
+        "confidence": 100
+      },
+      "link-integrity": {
+        "score": 100,
+        "confidence": 84
+      },
+      "skill-coherence": {
+        "score": 100,
+        "confidence": 100
+      },
+      "changelog-hygiene": {
+        "score": 100,
+        "confidence": 84
+      },
+      "supply-chain-vigilance": {
+        "score": 0,
+        "confidence": 100
+      }
+    }
+  },
+  {
+    "scored_at": "2026-04-29T03:28:43.645010Z",
+    "score": 0,
+    "domains": {
+      "supply-chain-vigilance": {
+        "score": 0,
+        "confidence": 100
+      },
+      "rfc-2119-compliance": {
+        "score": 100,
+        "confidence": 84
+      },
+      "trust-budget": {
+        "score": 100,
+        "confidence": 100
+      },
+      "capability-hygiene": {
+        "score": 100,
+        "confidence": 100
+      },
+      "supply-chain-review": {
+        "score": 100,
+        "confidence": 100
+      },
+      "schema-validity": {
+        "score": 100,
+        "confidence": 84
+      },
+      "federated-patterns": {
+        "score": 100,
+        "confidence": 100
+      },
+      "glossary-freshness": {
+        "score": 84,
+        "confidence": 84
+      },
+      "supply-chain-sca": {
+        "score": 0,
+        "confidence": 100
+      },
+      "domain-calibration": {
+        "score": 100,
+        "confidence": 100
+      },
+      "changelog-hygiene": {
+        "score": 100,
+        "confidence": 84
+      },
+      "spec-completeness": {
+        "score": 100,
+        "confidence": 84
+      },
+      "operator-calibration": {
+        "score": 100,
+        "confidence": 100
+      },
+      "skill-coherence": {
+        "score": 100,
+        "confidence": 100
+      },
+      "link-integrity": {
+        "score": 100,
+        "confidence": 84
+      },
+      "diagram-sync": {
+        "score": 100,
+        "confidence": 84
+      }
+    }
+  },
+  {
+    "scored_at": "2026-04-29T03:28:44.833183100Z",
+    "score": 0,
+    "domains": {
+      "skill-coherence": {
+        "score": 100,
+        "confidence": 100
+      },
+      "spec-completeness": {
+        "score": 100,
+        "confidence": 84
+      },
+      "supply-chain-review": {
+        "score": 100,
+        "confidence": 100
+      },
+      "supply-chain-sca": {
+        "score": 0,
+        "confidence": 100
+      },
+      "operator-calibration": {
+        "score": 100,
+        "confidence": 100
+      },
+      "supply-chain-vigilance": {
+        "score": 0,
+        "confidence": 100
+      },
+      "trust-budget": {
+        "score": 100,
+        "confidence": 100
+      },
+      "capability-hygiene": {
+        "score": 100,
+        "confidence": 100
+      },
+      "domain-calibration": {
+        "score": 100,
+        "confidence": 100
+      },
+      "schema-validity": {
+        "score": 100,
+        "confidence": 84
+      },
+      "rfc-2119-compliance": {
+        "score": 100,
+        "confidence": 84
+      },
+      "diagram-sync": {
+        "score": 100,
+        "confidence": 84
+      },
+      "federated-patterns": {
+        "score": 100,
+        "confidence": 100
+      },
+      "changelog-hygiene": {
+        "score": 100,
+        "confidence": 84
+      },
+      "glossary-freshness": {
+        "score": 84,
+        "confidence": 84
+      },
+      "link-integrity": {
+        "score": 100,
+        "confidence": 84
+      }
+    }
+  },
+  {
+    "scored_at": "2026-04-29T03:28:46.017293600Z",
+    "score": 0,
+    "domains": {
+      "glossary-freshness": {
+        "score": 84,
+        "confidence": 84
+      },
+      "rfc-2119-compliance": {
+        "score": 100,
+        "confidence": 84
+      },
+      "link-integrity": {
+        "score": 100,
+        "confidence": 84
+      },
+      "capability-hygiene": {
+        "score": 100,
+        "confidence": 100
+      },
+      "skill-coherence": {
+        "score": 100,
+        "confidence": 100
+      },
+      "supply-chain-sca": {
+        "score": 0,
+        "confidence": 100
+      },
+      "schema-validity": {
+        "score": 100,
+        "confidence": 84
+      },
+      "trust-budget": {
+        "score": 100,
+        "confidence": 100
+      },
+      "supply-chain-vigilance": {
+        "score": 0,
+        "confidence": 100
+      },
+      "changelog-hygiene": {
+        "score": 100,
+        "confidence": 84
+      },
+      "supply-chain-review": {
+        "score": 100,
+        "confidence": 100
+      },
+      "domain-calibration": {
+        "score": 100,
+        "confidence": 100
+      },
+      "diagram-sync": {
+        "score": 100,
+        "confidence": 84
+      },
+      "federated-patterns": {
+        "score": 100,
+        "confidence": 100
+      },
+      "operator-calibration": {
+        "score": 100,
+        "confidence": 100
+      },
+      "spec-completeness": {
+        "score": 100,
+        "confidence": 84
+      }
+    }
+  },
+  {
+    "scored_at": "2026-04-29T03:28:47.194453100Z",
+    "score": 0,
+    "domains": {
+      "supply-chain-vigilance": {
+        "score": 0,
+        "confidence": 100
+      },
+      "trust-budget": {
+        "score": 100,
+        "confidence": 100
+      },
+      "supply-chain-review": {
+        "score": 100,
+        "confidence": 100
+      },
+      "capability-hygiene": {
+        "score": 100,
+        "confidence": 100
+      },
+      "glossary-freshness": {
+        "score": 84,
+        "confidence": 84
+      },
+      "domain-calibration": {
+        "score": 100,
+        "confidence": 100
+      },
+      "changelog-hygiene": {
+        "score": 100,
+        "confidence": 84
+      },
+      "skill-coherence": {
+        "score": 100,
+        "confidence": 100
+      },
+      "operator-calibration": {
+        "score": 100,
+        "confidence": 100
+      },
+      "diagram-sync": {
+        "score": 100,
+        "confidence": 84
+      },
+      "rfc-2119-compliance": {
+        "score": 100,
+        "confidence": 84
+      },
+      "spec-completeness": {
+        "score": 100,
+        "confidence": 84
+      },
+      "schema-validity": {
+        "score": 100,
+        "confidence": 84
+      },
+      "link-integrity": {
+        "score": 100,
+        "confidence": 84
+      },
+      "supply-chain-sca": {
+        "score": 0,
+        "confidence": 100
+      },
+      "federated-patterns": {
+        "score": 100,
+        "confidence": 100
+      }
+    }
+  }
+]

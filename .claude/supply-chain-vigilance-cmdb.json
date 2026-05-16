@@ -10,11 +10,11 @@
   ],
   "meta": {
     "schema_version": "1",
-    "updated_at": "2026-04-26T20:04:06.671856800+00:00",
+    "updated_at": "2026-04-29T03:24:31.063799+00:00",
     "updated_by": "supply-chain-vigilance"
   },
   "score": 0,
   "sensor_status": "lockfile_unreadable",
   "total_packages_scanned": 0,
-  "updated_at": "2026-04-26T20:04:06.671856800+00:00"
+  "updated_at": "2026-04-29T03:24:31.063799+00:00"
 }

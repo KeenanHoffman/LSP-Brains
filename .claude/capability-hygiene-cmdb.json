@@ -7,6 +7,24 @@
       "possible": 0,
       "total": 0
     },
+    "hat_contracts": {
+      "compliant": 2,
+      "details": [
+        {
+          "hat": "rubber-duck",
+          "kind": "compliant",
+          "points": 0
+        },
+        {
+          "hat": "spec-editor",
+          "kind": "compliant",
+          "points": 0
+        }
+      ],
+      "earned": 0,
+      "possible": 0,
+      "total": 2
+    },
     "hats": {
       "compliant": 0,
       "details": [],
@@ -22,8 +40,40 @@
       "total": 0
     },
     "skills": {
-      "compliant": 2,
+      "compliant": 4,
       "details": [
+        {
+          "description_chars": 949,
+          "description_tokens_approx": 237,
+          "format": "plugin",
+          "has_when_to_use_signal": true,
+          "invocations_in_window": 0,
+          "last_invoked": null,
+          "path": "dependency-discipline/SKILL.md",
+          "points": 10,
+          "skill_age_days": 0,
+          "skill_id": "dependency-discipline",
+          "status": "compliant",
+          "usage_rarity": "common",
+          "usage_status": "new",
+          "window_days": 90
+        },
+        {
+          "description_chars": 650,
+          "description_tokens_approx": 162,
+          "format": "plugin",
+          "has_when_to_use_signal": true,
+          "invocations_in_window": 0,
+          "last_invoked": null,
+          "path": "neurogrim-onboarding/SKILL.md",
+          "points": 10,
+          "skill_age_days": 0,
+          "skill_id": "neurogrim-onboarding",
+          "status": "compliant",
+          "usage_rarity": "common",
+          "usage_status": "new",
+          "window_days": 90
+        },
         {
           "description_chars": 512,
           "description_tokens_approx": 128,
@@ -33,7 +83,7 @@
           "last_invoked": null,
           "path": "refine-judge-integrity/SKILL.md",
           "points": 10,
-          "skill_age_days": 0,
+          "skill_age_days": 6,
           "skill_id": "refine-judge-integrity",
           "status": "compliant",
           "usage_rarity": "common",
@@ -49,7 +99,7 @@
           "last_invoked": null,
           "path": "rubber-duck/SKILL.md",
           "points": 10,
-          "skill_age_days": 0,
+          "skill_age_days": 6,
           "skill_id": "rubber-duck",
           "status": "compliant",
           "usage_rarity": "common",
@@ -57,16 +107,16 @@
           "window_days": 90
         }
       ],
-      "earned": 20,
+      "earned": 40,
       "format:legacy": 0,
-      "format:plugin": 2,
+      "format:plugin": 4,
       "ledger:low_confidence": 1,
       "ledger:total_invocations": 0,
-      "possible": 20,
-      "total": 2,
+      "possible": 40,
+      "total": 4,
       "usage:alive": 0,
       "usage:dead": 0,
-      "usage:new": 2
+      "usage:new": 4
     },
     "subagents": {
       "compliant": 0,
@@ -83,10 +133,10 @@
       "total": 0
     }
   },
-  "compliant_count": 2,
+  "compliant_count": 4,
   "findings": [
     {
-      "detail": "All 2 capabilities across 6 types meet their authoring standards.",
+      "detail": "All 6 capabilities across 7 types meet their authoring standards.",
       "name": "all-capabilities-compliant",
       "points": 0,
       "status": "ok"
@@ -94,14 +144,46 @@
   ],
   "meta": {
     "schema_version": "1",
-    "updated_at": "2026-04-22T20:35:39.972910200+00:00",
+    "updated_at": "2026-04-29T03:24:30.544233300+00:00",
     "updated_by": "capability-hygiene"
   },
   "missing_when_to_use_count": 0,
   "over_budget_count": 0,
-  "overall_compliant_count": 2,
+  "overall_compliant_count": 6,
   "score": 100,
   "skill_details": [
+    {
+      "description_chars": 949,
+      "description_tokens_approx": 237,
+      "format": "plugin",
+      "has_when_to_use_signal": true,
+      "invocations_in_window": 0,
+      "last_invoked": null,
+      "path": "dependency-discipline/SKILL.md",
+      "points": 10,
+      "skill_age_days": 0,
+      "skill_id": "dependency-discipline",
+      "status": "compliant",
+      "usage_rarity": "common",
+      "usage_status": "new",
+      "window_days": 90
+    },
+    {
+      "description_chars": 650,
+      "description_tokens_approx": 162,
+      "format": "plugin",
+      "has_when_to_use_signal": true,
+      "invocations_in_window": 0,
+      "last_invoked": null,
+      "path": "neurogrim-onboarding/SKILL.md",
+      "points": 10,
+      "skill_age_days": 0,
+      "skill_id": "neurogrim-onboarding",
+      "status": "compliant",
+      "usage_rarity": "common",
+      "usage_status": "new",
+      "window_days": 90
+    },
     {
       "description_chars": 512,
       "description_tokens_approx": 128,
@@ -111,7 +193,7 @@
       "last_invoked": null,
       "path": "refine-judge-integrity/SKILL.md",
       "points": 10,
-      "skill_age_days": 0,
+      "skill_age_days": 6,
       "skill_id": "refine-judge-integrity",
       "status": "compliant",
       "usage_rarity": "common",
@@ -127,7 +209,7 @@
       "last_invoked": null,
       "path": "rubber-duck/SKILL.md",
       "points": 10,
-      "skill_age_days": 0,
+      "skill_age_days": 6,
       "skill_id": "rubber-duck",
       "status": "compliant",
       "usage_rarity": "common",
@@ -135,8 +217,8 @@
       "window_days": 90
     }
   ],
-  "total_capabilities": 2,
-  "total_skills": 2,
+  "total_capabilities": 6,
+  "total_skills": 4,
   "under_described_count": 0,
-  "updated_at": "2026-04-22T20:35:39.972910200+00:00"
+  "updated_at": "2026-04-29T03:24:30.544233300+00:00"
 }

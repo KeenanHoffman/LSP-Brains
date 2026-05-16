@@ -218,10 +218,10 @@
         "blocked": { "requires_approval": true,  "description": "Cannot execute regardless of confidence" }
       },
       "action_types": {
-        "clear-gate":       { "default_level": "notify",  "blast_radius": "low",      "reversible": true  },
-        "refresh-snapshot": { "default_level": "auto",    "blast_radius": "low",      "reversible": true  },
-        "edit-spec":        { "default_level": "approve", "blast_radius": "medium",   "reversible": true  },
-        "publish-spec":     { "default_level": "approve", "blast_radius": "high",     "reversible": false }
+        "clear-gate":       { "default_level": "notify",  "blast_radius": "low",    "description": "Clear a paused or pending publish-gate entry on this Brain so subsequent gate runs can proceed.",                                          "reversible": true  },
+        "refresh-snapshot": { "default_level": "auto",    "blast_radius": "low",    "description": "Re-run sensors and persist a fresh score snapshot to the bus without changing config or weights.",                                     "reversible": true  },
+        "edit-spec":        { "default_level": "approve", "blast_radius": "medium", "description": "Modify a normative file under spec/ — wording or structure changes that may shift conformance and require dual-review before publish.","reversible": true  },
+        "publish-spec":     { "default_level": "approve", "blast_radius": "high",   "description": "Tag and publish a new spec version after dual-review approval; downstream Brains adopt the new schema and rules from that point on.",  "reversible": false }
       },
       "safety_invariants": [
         { "rule": "destroy_always_blocked", "enforced_level": "blocked", "description": "Destructive actions MUST remain blocked regardless of confidence" },
